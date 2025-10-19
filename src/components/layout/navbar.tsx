@@ -18,7 +18,7 @@ import {
   LogOut,
   Library
 } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
@@ -57,20 +57,12 @@ export function Navbar() {
     })
     
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase.auth])
 
   // Fetch user profile when user changes
-  useEffect(() => {
-    if (user) {
-      fetchUserProfile(user.id)
-    } else {
-      setProfile(null)
-    }
-  }, [user])
-
-  async function fetchUserProfile(userId: string) {
+  const fetchUserProfile = useCallback(async (userId: string) => {
     try {
-      const { data: profileData, error: profileError } = await supabase
+      const { data: profileData, error: profileError} = await supabase
         .from('profiles')
         .select('id, display_name, email, avatar_url')
         .eq('id', userId)
@@ -118,9 +110,17 @@ export function Navbar() {
     } catch (error) {
       console.error('Error fetching profile:', error)
     }
-  }
+  }, [supabase])
 
-  async function handleSignOut() {
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile(user.id)
+    } else {
+      setProfile(null)
+    }
+  }, [user, fetchUserProfile])
+
+  const handleSignOut = async () => {
     await supabase.auth.signOut()
     setUserMenuOpen(false)
     router.push('/')

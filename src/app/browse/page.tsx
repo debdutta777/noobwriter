@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,11 +17,7 @@ export default function BrowsePage() {
   const [series, setSeries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    loadSeries()
-  }, [contentType, selectedGenres, sortBy, searchQuery])
-
-  const loadSeries = async () => {
+  const loadSeries = useCallback(async () => {
     setLoading(true)
     const result = await browseSeries({
       contentType,
@@ -34,7 +30,11 @@ export default function BrowsePage() {
       setSeries(result.series)
     }
     setLoading(false)
-  }
+  }, [contentType, selectedGenres, sortBy, searchQuery])
+
+  useEffect(() => {
+    loadSeries()
+  }, [loadSeries])
 
   const genres = [
     'Fantasy', 'Romance', 'Action', 'Sci-Fi', 'Mystery', 'Horror',

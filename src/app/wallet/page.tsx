@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,11 +25,7 @@ export default function WalletPage() {
   const [balance, setBalance] = useState(0)
   const [transactions, setTransactions] = useState<Transaction[]>([])
 
-  useEffect(() => {
-    checkAuthAndLoadWallet()
-  }, [])
-
-  async function checkAuthAndLoadWallet() {
+  const checkAuthAndLoadWallet = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -37,17 +33,13 @@ export default function WalletPage() {
       return
     }
 
-    await loadWalletData(user.id)
-  }
-
-  async function loadWalletData(userId: string) {
     setLoading(true)
 
     // Get wallet balance
     const { data: wallet } = await supabase
       .from('wallets')
       .select('coin_balance')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
     if (wallet) {
@@ -58,7 +50,7 @@ export default function WalletPage() {
     const { data: txns } = await supabase
       .from('transactions')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20)
 
@@ -67,7 +59,11 @@ export default function WalletPage() {
     }
 
     setLoading(false)
-  }
+  }, [supabase, router])
+
+  useEffect(() => {
+    checkAuthAndLoadWallet()
+  }, [checkAuthAndLoadWallet])
 
   if (loading) {
     return (
