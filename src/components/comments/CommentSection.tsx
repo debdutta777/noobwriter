@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MessageSquare, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -32,18 +32,18 @@ export default function CommentSection({ seriesId, chapterId, initialCount = 0 }
   const [loading, setLoading] = useState(true)
   const [showCommentForm, setShowCommentForm] = useState(false)
 
-  useEffect(() => {
-    loadComments()
-  }, [seriesId, chapterId])
-
-  const loadComments = async () => {
+  const loadComments = useCallback(async () => {
     setLoading(true)
     const { comments: data } = await getComments(seriesId, chapterId)
     if (data) {
       setComments(data)
     }
     setLoading(false)
-  }
+  }, [seriesId, chapterId])
+
+  useEffect(() => {
+    loadComments()
+  }, [loadComments])
 
   const handleCommentAdded = () => {
     loadComments()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -74,11 +74,7 @@ export default function WriterDashboardPage() {
   const [error, setError] = useState<string | null>(null)
 
   // Check authentication
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
@@ -115,7 +111,11 @@ export default function WriterDashboardPage() {
       setAuthChecking(false)
       setLoading(false)
     }
-  }
+  }, [supabase, router])
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   const loadDashboard = async () => {
     try {

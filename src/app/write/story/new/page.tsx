@@ -203,7 +203,7 @@ export default function NewStoryPage() {
                           : 'border-border hover:border-primary/50'
                       }`}
                     >
-                      <Image className="w-8 h-8 mx-auto mb-2" />
+                      <Image className="w-8 h-8 mx-auto mb-2" aria-label="Manga icon" />
                       <p className="font-semibold">Manga</p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Image-based comics

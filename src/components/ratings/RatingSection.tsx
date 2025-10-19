@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Star, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,11 +38,7 @@ export default function RatingSection({ seriesId, averageRating = 0, totalRating
   const [loading, setLoading] = useState(true)
   const [showRatingForm, setShowRatingForm] = useState(false)
 
-  useEffect(() => {
-    loadRatings()
-  }, [seriesId])
-
-  const loadRatings = async () => {
+  const loadRatings = useCallback(async () => {
     setLoading(true)
     const { ratings: data, userRating: userData } = await getRatings(seriesId)
     if (data) {
@@ -52,7 +48,11 @@ export default function RatingSection({ seriesId, averageRating = 0, totalRating
       setUserRating(userData)
     }
     setLoading(false)
-  }
+  }, [seriesId])
+
+  useEffect(() => {
+    loadRatings()
+  }, [loadRatings])
 
   const handleRatingUpdated = () => {
     loadRatings()

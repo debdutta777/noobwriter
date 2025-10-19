@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -70,11 +70,7 @@ export default function BuyCoinsPage() {
   const [processing, setProcessing] = useState(false)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
-  async function checkAuth() {
+  const checkAuth = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
     
     if (!user) {
@@ -84,7 +80,11 @@ export default function BuyCoinsPage() {
 
     setUser(user)
     setLoading(false)
-  }
+  }, [supabase, router])
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
 
   async function handlePurchase(pkg: CoinPackage) {
     if (!user || !razorpayLoaded) {
