@@ -1,0 +1,297 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+
+export async function getWriterDashboardData() {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { data: null, error: 'Not authenticated' }
+  }
+
+  try {
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('display_name, email')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile) {
+      return { data: null, error: 'Profile not found' }
+    }
+
+    // Get writer's series
+    const { data: series } = await supabase
+      .from('series')
+      .select('*')
+      .eq('author_id', user.id)
+      .order('created_at', { ascending: false })
+
+    const mySeries = series || []
+
+    // Calculate stats
+    const totalSeries = mySeries.length
+    const totalChapters = mySeries.reduce((sum, s) => sum + (s.total_chapters || 0), 0)
+    const totalViews = mySeries.reduce((sum, s) => sum + (s.total_views || 0), 0)
+    const avgRating = mySeries.length > 0
+      ? mySeries.reduce((sum, s) => sum + (s.avg_rating || 0), 0) / mySeries.length
+      : 0
+
+    // Get recent chapters (last 5)
+    const { data: chapters } = await supabase
+      .from('chapters')
+      .select('id, title, chapter_number, views, published_at, series_id')
+      .in('series_id', mySeries.map(s => s.id))
+      .eq('is_published', true)
+      .order('published_at', { ascending: false })
+      .limit(5)
+
+    // Get series titles for chapters
+    const recentChapters = (chapters || []).map(chapter => {
+      const seriesInfo = mySeries.find(s => s.id === chapter.series_id)
+      return {
+        ...chapter,
+        series_title: seriesInfo?.title || 'Unknown',
+      }
+    })
+
+    // Get earnings (mock for now - would come from transactions)
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('amount, created_at')
+      .eq('user_id', user.id)
+      .eq('type', 'unlock')
+      .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+
+    const thisMonthEarnings = (transactions || []).reduce((sum, t) => sum + Math.abs(t.amount), 0)
+
+    // Get unique readers (users who unlocked chapters)
+    const { count: totalReaders } = await supabase
+      .from('chapter_unlocks')
+      .select('user_id', { count: 'exact', head: true })
+      .in('chapter_id', (chapters || []).map(c => c.id))
+
+    return {
+      data: {
+        user: {
+          display_name: profile.display_name,
+          email: profile.email,
+        },
+        stats: {
+          totalSeries,
+          totalChapters,
+          totalViews,
+          totalEarnings: thisMonthEarnings * 0.7, // 70% revenue share
+          totalReaders: totalReaders || 0,
+          avgRating,
+        },
+        mySeries: mySeries.map(s => ({
+          id: s.id,
+          title: s.title,
+          cover_url: s.cover_url,
+          content_type: s.content_type,
+          total_chapters: s.total_chapters || 0,
+          total_views: s.total_views || 0,
+          avg_rating: s.avg_rating || 0,
+          is_published: s.is_published,
+          last_chapter_at: s.last_chapter_at,
+        })),
+        recentChapters,
+        earnings: {
+          thisMonth: thisMonthEarnings * 0.7,
+          lastMonth: 0, // Would calculate from previous month
+          pendingPayout: thisMonthEarnings * 0.7,
+        },
+      },
+      error: null,
+    }
+  } catch (error) {
+    console.error('Failed to load dashboard:', error)
+    return { data: null, error: 'Failed to load dashboard data' }
+  }
+}
+
+export async function createSeries(formData: {
+  title: string
+  synopsis: string
+  content_type: 'novel' | 'manga'
+  genres: string[]
+  tags: string[]
+  age_rating: string
+  cover_url?: string
+}) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('series')
+      .insert({
+        author_id: user.id,
+        title: formData.title,
+        synopsis: formData.synopsis,
+        content_type: formData.content_type,
+        genres: formData.genres,
+        tags: formData.tags,
+        age_rating: formData.age_rating,
+        cover_url: formData.cover_url,
+        is_published: false,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data, error: null }
+  } catch (error) {
+    return { success: false, error: 'Failed to create series' }
+  }
+}
+
+export async function updateSeries(
+  seriesId: string,
+  updates: Partial<{
+    title: string
+    synopsis: string
+    genres: string[]
+    tags: string[]
+    age_rating: string
+    cover_url: string
+    is_published: boolean
+  }>
+) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  try {
+    // Verify ownership
+    const { data: series } = await supabase
+      .from('series')
+      .select('author_id')
+      .eq('id', seriesId)
+      .single()
+
+    if (!series || series.author_id !== user.id) {
+      return { success: false, error: 'Not authorized' }
+    }
+
+    const { error } = await supabase
+      .from('series')
+      .update(updates)
+      .eq('id', seriesId)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (error) {
+    return { success: false, error: 'Failed to update series' }
+  }
+}
+
+export async function createChapter(formData: {
+  series_id: string
+  title: string
+  content: string
+  chapter_number: number
+  is_premium: boolean
+  coin_price: number
+}) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  try {
+    // Verify series ownership
+    const { data: series } = await supabase
+      .from('series')
+      .select('author_id')
+      .eq('id', formData.series_id)
+      .single()
+
+    if (!series || series.author_id !== user.id) {
+      return { success: false, error: 'Not authorized' }
+    }
+
+    const { data, error } = await supabase
+      .from('chapters')
+      .insert({
+        series_id: formData.series_id,
+        title: formData.title,
+        content: formData.content,
+        chapter_number: formData.chapter_number,
+        is_premium: formData.is_premium,
+        coin_price: formData.coin_price,
+        is_published: false,
+      })
+      .select()
+      .single()
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, data, error: null }
+  } catch (error) {
+    return { success: false, error: 'Failed to create chapter' }
+  }
+}
+
+export async function publishChapter(chapterId: string) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  try {
+    // Verify ownership through series
+    const { data: chapter } = await supabase
+      .from('chapters')
+      .select('series_id, series(author_id)')
+      .eq('id', chapterId)
+      .single()
+
+    if (!chapter || (chapter.series as any).author_id !== user.id) {
+      return { success: false, error: 'Not authorized' }
+    }
+
+    const { error } = await supabase
+      .from('chapters')
+      .update({
+        is_published: true,
+        published_at: new Date().toISOString(),
+      })
+      .eq('id', chapterId)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (error) {
+    return { success: false, error: 'Failed to publish chapter' }
+  }
+}
