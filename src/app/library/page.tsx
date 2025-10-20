@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -179,11 +180,12 @@ export default function LibraryPage() {
               {readingProgress.map((item: any) => (
                 <Card key={item.id} className="overflow-hidden">
                   <div className="flex">
-                    <div className="w-32 flex-shrink-0">
-                      <img
+                    <div className="relative w-32 h-48 flex-shrink-0">
+                      <Image
                         src={item.series?.cover_url || '/placeholder.png'}
-                        alt={item.series?.title}
-                        className="w-full h-full object-cover"
+                        alt={item.series?.title || 'Cover'}
+                        fill
+                        className="object-cover"
                       />
                     </div>
                     <div className="flex-1 p-4">
@@ -255,10 +257,11 @@ export default function LibraryPage() {
                   <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                     <CardHeader className="p-0">
                       <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">
-                        <img
+                        <Image
                           src={item.series?.cover_url || '/placeholder.png'}
-                          alt={item.series?.title}
-                          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                          alt={item.series?.title || 'Cover'}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <div className="absolute top-2 right-2">
                           <Button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -389,12 +390,13 @@ export default function WriterDashboardPage() {
                         className="flex gap-4 p-4 rounded-lg border hover:bg-accent transition-colors"
                       >
                         {/* Cover */}
-                        <div className="flex-shrink-0 w-20 h-28 rounded-md bg-muted overflow-hidden">
+                        <div className="relative flex-shrink-0 w-20 h-28 rounded-md bg-muted overflow-hidden">
                           {series.cover_url ? (
-                            <img
+                            <Image
                               src={series.cover_url}
                               alt={series.title}
-                              className="w-full h-full object-cover"
+                              fill
+                              className="object-cover"
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -81,10 +82,12 @@ export default function SeriesDetailClient({ params }: SeriesDetailClientProps) 
             {/* Cover Image */}
             <div className="md:col-span-1">
               <div className="aspect-[2/3] relative rounded-lg overflow-hidden shadow-2xl">
-                <img
-                  src={series.cover_image_url || '/placeholder-cover.jpg'}
+                <Image
+                  src={series.cover_url || '/placeholder-cover.jpg'}
                   alt={series.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
+                  priority
                 />
               </div>
             </div>

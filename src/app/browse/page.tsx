@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -232,10 +233,11 @@ export default function BrowsePage() {
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardHeader className="p-0">
                   <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">
-                    <img
+                    <Image
                       src={item.cover || 'https://via.placeholder.com/300x400?text=No+Cover'}
                       alt={item.title}
-                      className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-2 left-2">
                     <span className={`px-2 py-1 rounded text-xs font-semibold ${

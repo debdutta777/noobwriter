@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Heart, Reply, Trash2, MoreVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -76,12 +77,13 @@ export default function CommentItem({
       <div className="flex gap-3">
         {/* Avatar */}
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <div className="relative w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
             {comment.profiles.avatar_url ? (
-              <img
+              <Image
                 src={comment.profiles.avatar_url}
                 alt={comment.profiles.display_name}
-                className="w-full h-full rounded-full object-cover"
+                fill
+                className="object-cover"
               />
             ) : (
               <span className="text-sm font-medium">
