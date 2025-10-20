@@ -82,60 +82,60 @@ export default function LibraryPage() {
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">My Library</h1>
+        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">My Library</h1>
         <p className="text-muted-foreground">Manage your reading collection and account</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card>
+        <Card className="border-amber-200 bg-gradient-to-br from-amber-50/50 to-background hover:shadow-lg hover:shadow-amber-600/20 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Coin Balance</CardTitle>
             <Coins className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{user?.coin_balance || 0}</div>
+            <div className="text-2xl font-bold text-amber-700">{user?.coin_balance || 0}</div>
             <Link href="/coins">
-              <p className="text-xs text-primary hover:underline cursor-pointer mt-1">
+              <p className="text-xs text-amber-600 hover:underline cursor-pointer mt-1">
                 Buy more coins →
               </p>
             </Link>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-green-200 bg-gradient-to-br from-green-50/50 to-background hover:shadow-lg hover:shadow-green-600/20 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Continue Reading</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{readingProgress?.length || 0}</div>
+            <div className="text-2xl font-bold text-green-700">{readingProgress?.length || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               In progress
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-red-200 bg-gradient-to-br from-red-50/50 to-background hover:shadow-lg hover:shadow-red-600/20 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Favorites</CardTitle>
             <Heart className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{favorites?.length || 0}</div>
+            <div className="text-2xl font-bold text-red-700">{favorites?.length || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Series saved
             </p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-purple-200 bg-gradient-to-br from-purple-50/50 to-background hover:shadow-lg hover:shadow-purple-600/20 transition-all duration-300">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Chapters Read</CardTitle>
-            <BookOpen className="h-4 w-4 text-primary" />
+            <BookOpen className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">147</div>
+            <div className="text-2xl font-bold text-purple-700">147</div>
             <p className="text-xs text-muted-foreground mt-1">
               This month
             </p>
@@ -145,24 +145,24 @@ export default function LibraryPage() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
-          <TabsTrigger value="continue-reading">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 bg-gradient-to-r from-purple-100/50 to-blue-100/50">
+          <TabsTrigger value="continue-reading" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-600 data-[state=active]:text-white">
             <Clock className="h-4 w-4 mr-2" />
             Continue Reading
           </TabsTrigger>
-          <TabsTrigger value="favorites">
+          <TabsTrigger value="favorites" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-pink-600 data-[state=active]:to-red-600 data-[state=active]:text-white">
             <Heart className="h-4 w-4 mr-2" />
             Favorites
           </TabsTrigger>
-          <TabsTrigger value="history">
+          <TabsTrigger value="history" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-green-600 data-[state=active]:text-white">
             <History className="h-4 w-4 mr-2" />
             History
           </TabsTrigger>
-          <TabsTrigger value="wallet">
+          <TabsTrigger value="wallet" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-amber-600 data-[state=active]:to-yellow-600 data-[state=active]:text-white">
             <Coins className="h-4 w-4 mr-2" />
             Wallet
           </TabsTrigger>
-          <TabsTrigger value="settings">
+          <TabsTrigger value="settings" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-gray-600 data-[state=active]:to-slate-600 data-[state=active]:text-white">
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </TabsTrigger>

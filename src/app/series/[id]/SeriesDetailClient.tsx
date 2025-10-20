@@ -17,9 +17,10 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react'
-import { getSeriesDetail } from '@/app/actions/reader-actions'
+import { getSeriesDetail, toggleFavorite, checkIsFavorited } from '@/app/actions/reader-actions'
 import CommentSection from '@/components/comments/CommentSection'
 import RatingSection from '@/components/ratings/RatingSection'
+import TipButton from '@/components/tip/TipButton'
 
 interface SeriesDetailClientProps {
   params: { id: string }
@@ -32,6 +33,7 @@ export default function SeriesDetailClient({ params }: SeriesDetailClientProps) 
   const [series, setSeries] = useState<any>(null)
   const [chapters, setChapters] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
 
   const loadSeries = useCallback(async () => {
     setLoading(true)
@@ -43,9 +45,30 @@ export default function SeriesDetailClient({ params }: SeriesDetailClientProps) 
     setLoading(false)
   }, [params.id])
 
+  const checkFavoriteStatus = useCallback(async () => {
+    const result = await checkIsFavorited(params.id)
+    setIsFavorited(result.isFavorited)
+  }, [params.id])
+
+  const handleToggleFavorite = async () => {
+    if (favoriteLoading) return
+    
+    setFavoriteLoading(true)
+    const result = await toggleFavorite(params.id)
+    
+    if (result.success) {
+      setIsFavorited(result.isFavorited)
+    } else if (result.error) {
+      alert(result.error)
+    }
+    
+    setFavoriteLoading(false)
+  }
+
   useEffect(() => {
     loadSeries()
-  }, [loadSeries])
+    checkFavoriteStatus()
+  }, [loadSeries, checkFavoriteStatus])
 
   if (loading) {
     return (
@@ -160,12 +183,19 @@ export default function SeriesDetailClient({ params }: SeriesDetailClientProps) 
                 <Button
                   size="lg"
                   variant={isFavorited ? "default" : "outline"}
-                  onClick={() => setIsFavorited(!isFavorited)}
+                  onClick={handleToggleFavorite}
+                  disabled={favoriteLoading}
                   className="gap-2"
                 >
                   <Heart className={isFavorited ? "fill-current" : ""} />
-                  {isFavorited ? 'Favorited' : 'Add to Library'}
+                  {favoriteLoading ? 'Saving...' : (isFavorited ? 'Favorited' : 'Add to Library')}
                 </Button>
+                <TipButton
+                  authorId={series.author_id}
+                  authorName={series.author}
+                  seriesId={series.id}
+                  size="lg"
+                />
                 <Button size="lg" variant="outline" className="gap-2">
                   <Share2 className="h-4 w-4" />
                   Share

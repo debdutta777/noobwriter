@@ -9,6 +9,7 @@ import { UnlockPremiumModal } from '@/components/modals/unlock-premium-modal'
 import { getChapterContent } from '@/app/actions/reader-actions'
 import { incrementChapterViews, updateReadingProgress, toggleChapterLike } from '@/app/actions/stats-actions'
 import CommentSection from '@/components/comments/CommentSection'
+import TipButton from '@/components/tip/TipButton'
 import {
   ChevronLeft,
   ChevronRight,
@@ -409,6 +410,24 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
               </div>
             </>
           )}
+
+          {/* Tip Author Section */}
+          <div className="py-8 border-t border-b mb-8">
+            <div className="max-w-2xl mx-auto text-center">
+              <h3 className="text-xl font-semibold mb-2">Enjoyed this chapter?</h3>
+              <p className="text-muted-foreground mb-4">
+                Show your support to {series.author} by sending a tip!
+              </p>
+              <TipButton
+                authorId={series.author_id}
+                authorName={series.author}
+                seriesId={params.seriesId}
+                chapterId={chapter.id}
+                size="lg"
+                className="inline-flex"
+              />
+            </div>
+          </div>
 
           {/* Chapter Navigation */}
           <div className="flex items-center justify-between py-8 border-t border-b mb-8">

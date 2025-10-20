@@ -213,6 +213,83 @@ export async function getChapterContent(seriesId: string, chapterNumber: number)
   }
 }
 
+export async function toggleFavorite(seriesId: string) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { success: false, isFavorited: false, error: 'Not authenticated' }
+  }
+
+  try {
+    // Check if already favorited
+    const { data: existing } = await supabase
+      .from('favorites')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('series_id', seriesId)
+      .single()
+
+    if (existing) {
+      // Remove favorite
+      const { error: deleteError } = await supabase
+        .from('favorites')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('series_id', seriesId)
+
+      if (deleteError) {
+        console.error('Error removing favorite:', deleteError)
+        return { success: false, isFavorited: true, error: 'Failed to remove favorite' }
+      }
+
+      return { success: true, isFavorited: false, error: null }
+    } else {
+      // Add favorite
+      const { error: insertError } = await supabase
+        .from('favorites')
+        .insert({
+          user_id: user.id,
+          series_id: seriesId,
+        })
+
+      if (insertError) {
+        console.error('Error adding favorite:', insertError)
+        return { success: false, isFavorited: false, error: 'Failed to add favorite' }
+      }
+
+      return { success: true, isFavorited: true, error: null }
+    }
+  } catch (error) {
+    console.error('Error in toggleFavorite:', error)
+    return { success: false, isFavorited: false, error: 'Failed to toggle favorite' }
+  }
+}
+
+export async function checkIsFavorited(seriesId: string) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { isFavorited: false, error: null }
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('favorites')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('series_id', seriesId)
+      .single()
+
+    return { isFavorited: !!data, error: null }
+  } catch (error) {
+    return { isFavorited: false, error: null }
+  }
+}
+
 export async function getUserLibrary() {
   const supabase = await createClient()
 
