@@ -132,11 +132,19 @@ export async function createSeries(formData: {
   }
 
   try {
+    // Generate slug from title
+    const slug = formData.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 100) + '-' + Date.now()
+
     const { data, error } = await supabase
       .from('series')
       .insert({
         author_id: user.id,
         title: formData.title,
+        slug: slug,
         synopsis: formData.synopsis,
         content_type: formData.content_type,
         genres: formData.genres,
