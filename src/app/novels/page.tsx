@@ -18,10 +18,6 @@ export default function NovelsPage() {
 
   const genres = ['Fantasy', 'Romance', 'Action', 'Sci-Fi', 'Mystery', 'Horror', 'Comedy', 'Drama']
 
-  useEffect(() => {
-    loadNovels()
-  }, [searchQuery, selectedGenres, sortBy])
-
   const loadNovels = async () => {
     setLoading(true)
     const result = await browseSeries({
@@ -36,6 +32,11 @@ export default function NovelsPage() {
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    loadNovels()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedGenres, sortBy])
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres(prev =>

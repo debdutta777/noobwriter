@@ -1,19 +1,10 @@
 {
-  "css.lint.unknownAtRules": "ignore",
-  "scss.lint.unknownAtRules": "ignore",
-  "less.lint.unknownAtRules": "ignore",
-  "tailwindCSS.experimental.classRegex": [
-    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
-    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
-  ],
-  "files.associations": {
-    "*.css": "tailwindcss"
-  },
-  "editor.quickSuggestions": {
-    "strings": true
-  },
-  "tailwindCSS.includeLanguages": {
-    "typescript": "javascript",
-    "typescriptreact": "javascript"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/.next/**": true
   }
 }

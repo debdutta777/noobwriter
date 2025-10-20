@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { UnlockPremiumModal } from '@/components/modals/unlock-premium-modal'
 import { getChapterContent } from '@/app/actions/reader-actions'
+import { incrementChapterViews, updateReadingProgress, toggleChapterLike } from '@/app/actions/stats-actions'
 import CommentSection from '@/components/comments/CommentSection'
 import {
   ChevronLeft,
@@ -19,7 +20,8 @@ import {
   Lock,
   Coins,
   MessageSquare,
-  ArrowUp
+  ArrowUp,
+  Heart
 } from 'lucide-react'
 
 interface NovelReaderClientProps {
@@ -39,6 +41,9 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
   const [loading, setLoading] = useState(true)
   const [chapterData, setChapterData] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [isLiked, setIsLiked] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
+  const [viewTracked, setViewTracked] = useState(false)
 
   const chapterNum = parseInt(params.chapterNumber)
 
@@ -54,6 +59,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
       }
       
       setChapterData(data)
+      setLikeCount(data.chapter.likes || 0)
     } catch (err) {
       console.error('Failed to load chapter:', err)
       setError('Failed to load chapter')
@@ -66,22 +72,44 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
     loadChapter()
   }, [loadChapter])
 
-  // Scroll progress tracking
+  // Track view count once when chapter loads
   useEffect(() => {
+    if (chapterData && !viewTracked) {
+      incrementChapterViews(chapterData.chapter.id, params.seriesId)
+      setViewTracked(true)
+    }
+  }, [chapterData, viewTracked, params.seriesId])
+
+  // Scroll progress tracking and reading progress updates
+  useEffect(() => {
+    let progressTimeout: NodeJS.Timeout
+
     const handleScroll = () => {
       const windowHeight = window.innerHeight
       const documentHeight = document.documentElement.scrollHeight
       const scrollTop = window.scrollY
       
       const progress = (scrollTop / (documentHeight - windowHeight)) * 100
-      setReadingProgress(Math.min(progress, 100))
+      const currentProgress = Math.min(progress, 100)
+      setReadingProgress(currentProgress)
       
       setShowScrollTop(scrollTop > 500)
+
+      // Debounce reading progress updates
+      if (chapterData?.chapter?.id) {
+        clearTimeout(progressTimeout)
+        progressTimeout = setTimeout(() => {
+          updateReadingProgress(chapterData.chapter.id, currentProgress)
+        }, 2000)
+      }
     }
 
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      clearTimeout(progressTimeout)
+    }
+  }, [chapterData])
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -90,6 +118,16 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
   const handleUnlock = () => {
     // TODO: Implement unlock flow with Razorpay
     setShowUnlockModal(false)
+  }
+
+  const handleLike = async () => {
+    if (!chapterData?.chapter?.id) return
+
+    const result = await toggleChapterLike(chapterData.chapter.id)
+    if (result.success) {
+      setIsLiked(result.liked!)
+      setLikeCount(prev => result.liked ? prev + 1 : Math.max(prev - 1, 0))
+    }
   }
 
   if (loading) {
@@ -337,16 +375,39 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
 
           {/* Chapter Content */}
           {!needsUnlock && (
-            <div
-              className="prose prose-gray dark:prose-invert max-w-none mb-12"
-              style={{ fontSize: `${fontSize}px` }}
-            >
-              {chapter.content.split('\n\n').map((paragraph: string, index: number) => (
-                <p key={index} className="mb-4 leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
+            <>
+              <div
+                className="prose prose-gray dark:prose-invert max-w-none mb-8"
+                style={{ fontSize: `${fontSize}px` }}
+              >
+                {chapter.content.split('\n\n').map((paragraph: string, index: number) => (
+                  <p key={index} className="mb-4 leading-relaxed">
+                    {paragraph}
+                  </p>
+                ))}
+              </div>
+
+              {/* Chapter Stats and Actions */}
+              <div className="flex items-center justify-center gap-6 py-6 mb-8 border-y">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  onClick={handleLike}
+                  className={isLiked ? 'text-red-500' : ''}
+                >
+                  <Heart className={`h-5 w-5 mr-2 ${isLiked ? 'fill-current' : ''}`} />
+                  {likeCount} {likeCount === 1 ? 'Like' : 'Likes'}
+                </Button>
+                <Button variant="ghost" size="lg">
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Comments
+                </Button>
+                <Button variant="ghost" size="lg">
+                  <Share2 className="h-5 w-5 mr-2" />
+                  Share
+                </Button>
+              </div>
+            </>
           )}
 
           {/* Chapter Navigation */}

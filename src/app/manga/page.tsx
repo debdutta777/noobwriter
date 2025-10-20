@@ -18,10 +18,6 @@ export default function MangaPage() {
 
   const genres = ['Action', 'Romance', 'Fantasy', 'Comedy', 'Drama', 'Horror', 'Mystery', 'Sci-Fi']
 
-  useEffect(() => {
-    loadManga()
-  }, [searchQuery, selectedGenres, sortBy])
-
   const loadManga = async () => {
     setLoading(true)
     const result = await browseSeries({
@@ -36,6 +32,11 @@ export default function MangaPage() {
     }
     setLoading(false)
   }
+
+  useEffect(() => {
+    loadManga()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, selectedGenres, sortBy])
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres(prev =>

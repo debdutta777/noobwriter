@@ -152,19 +152,59 @@ export async function getChapterContent(seriesId: string, chapterNumber: number)
       isUnlocked = !!unlock
     }
 
+    // Get series data
+    const { data: series } = await supabase
+      .from('series')
+      .select('*, profiles!author_id(display_name)')
+      .eq('id', seriesId)
+      .single()
+
+    // Get previous and next chapters
+    const { data: prevChapter } = await supabase
+      .from('chapters')
+      .select('id, chapter_number, title')
+      .eq('series_id', seriesId)
+      .eq('is_published', true)
+      .lt('chapter_number', chapterNumber)
+      .order('chapter_number', { ascending: false })
+      .limit(1)
+      .single()
+
+    const { data: nextChapter } = await supabase
+      .from('chapters')
+      .select('id, chapter_number, title')
+      .eq('series_id', seriesId)
+      .eq('is_published', true)
+      .gt('chapter_number', chapterNumber)
+      .order('chapter_number', { ascending: true })
+      .limit(1)
+      .single()
+
+    // Get user's coin balance if authenticated
+    let userCoins = 0
+    if (user) {
+      const { data: wallet } = await supabase
+        .from('wallets')
+        .select('coin_balance')
+        .eq('user_id', user.id)
+        .single()
+      
+      userCoins = wallet?.coin_balance || 0
+    }
+
     // Increment view count
     await supabase
       .from('chapters')
-      .update({ views: (chapter.views || 0) + 1 })
+      .update({ view_count: (chapter.view_count || 0) + 1 })
       .eq('id', chapter.id)
 
     return {
-      chapter: {
-        ...chapter,
-        seriesTitle: (chapter.series as any)?.title,
-        authorName: (chapter.series as any)?.profiles?.display_name,
-      },
+      chapter,
+      series,
       isUnlocked,
+      userCoins,
+      prevChapter: prevChapter || null,
+      nextChapter: nextChapter || null,
       error: null,
     }
   } catch (error) {
