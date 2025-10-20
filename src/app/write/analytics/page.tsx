@@ -16,78 +16,76 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
+import { getWriterAnalytics } from '@/app/actions/analytics-actions'
+import WorldMap from '@/components/analytics/WorldMap'
+
+type AnalyticsData = {
+  overview: {
+    totalViews: number
+    viewsChange: number
+    totalReaders: number
+    readersChange: number
+    totalRevenue: number
+    revenueChange: number
+    avgRating: number
+    ratingChange: number
+  }
+  seriesPerformance: Array<{
+    id: string
+    title: string
+    views: number
+    readers: number
+    revenue: number
+    rating: number
+  }>
+  chapterPerformance: Array<{
+    chapter: number
+    title: string
+    views: number
+    engagement: number
+    revenue: number
+  }>
+  readerDemographics: {
+    byDevice: Array<{ name: string; value: number; count: number }>
+    byRegion: Array<{ name: string; value: number; count: number; lat: number; lng: number }>
+    readingTimes: Array<{ hour: string; readers: number }>
+  }
+  revenueBreakdown: {
+    thisMonth: number
+    lastMonth: number
+    bySource: Array<{ source: string; amount: number; percentage: number }>
+    dailyRevenue: Array<{ date: string; amount: number }>
+  }
+}
 
 export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
-
-  // Mock data - will be replaced with real data from server actions
-  const stats = {
-    overview: {
-      totalViews: 125430,
-      viewsChange: 12.5,
-      totalReaders: 8234,
-      readersChange: 8.2,
-      totalRevenue: 15680,
-      revenueChange: 15.3,
-      avgRating: 4.6,
-      ratingChange: 0.2,
-    },
-    seriesPerformance: [
-      { id: '1', title: 'The Legendary Mechanic', views: 45230, readers: 3421, revenue: 8500, rating: 4.7, trend: 'up' },
-      { id: '2', title: 'Solo Leveling Chronicles', views: 38200, readers: 2890, revenue: 5200, rating: 4.5, trend: 'up' },
-      { id: '3', title: 'Rebirth of the Strongest', views: 25100, readers: 1650, revenue: 1980, rating: 4.4, trend: 'down' },
-      { id: '4', title: 'Magic Emperor', views: 16900, readers: 273, revenue: 0, rating: 4.8, trend: 'up' },
-    ],
-    chapterPerformance: [
-      { chapter: 23, title: 'The Awakening', views: 4520, engagement: 85, revenue: 890 },
-      { chapter: 22, title: 'Hidden Power', views: 4180, engagement: 82, revenue: 820 },
-      { chapter: 21, title: 'First Battle', views: 3950, engagement: 88, revenue: 780 },
-      { chapter: 20, title: 'New Beginning', views: 3720, engagement: 79, revenue: 650 },
-      { chapter: 19, title: 'Discovery', views: 3580, engagement: 76, revenue: 580 },
-    ],
-    readerDemographics: {
-      byDevice: [
-        { name: 'Mobile', value: 65, count: 5352 },
-        { name: 'Desktop', value: 28, count: 2305 },
-        { name: 'Tablet', value: 7, count: 577 },
-      ],
-      byRegion: [
-        { name: 'Asia', value: 45, count: 3705 },
-        { name: 'North America', value: 30, count: 2470 },
-        { name: 'Europe', value: 18, count: 1482 },
-        { name: 'Others', value: 7, count: 577 },
-      ],
-      readingTimes: [
-        { hour: '6 AM', readers: 850 },
-        { hour: '12 PM', readers: 1200 },
-        { hour: '6 PM', readers: 2100 },
-        { hour: '12 AM', readers: 1800 },
-      ],
-    },
-    revenueBreakdown: {
-      thisMonth: 5680,
-      lastMonth: 4920,
-      bySource: [
-        { source: 'Chapter Unlocks', amount: 4200, percentage: 74 },
-        { source: 'Tips', amount: 980, percentage: 17 },
-        { source: 'Subscriptions', amount: 500, percentage: 9 },
-      ],
-      dailyRevenue: [
-        { date: 'Oct 13', amount: 180 },
-        { date: 'Oct 14', amount: 220 },
-        { date: 'Oct 15', amount: 195 },
-        { date: 'Oct 16', amount: 250 },
-        { date: 'Oct 17', amount: 210 },
-        { date: 'Oct 18', amount: 280 },
-        { date: 'Oct 19', amount: 245 },
-      ],
-    },
-  }
+  const [stats, setStats] = useState<AnalyticsData | null>(null)
 
   useEffect(() => {
-    // TODO: Fetch analytics data from server
-    setTimeout(() => setLoading(false), 500)
+    const fetchAnalytics = async () => {
+      setLoading(true)
+      setError(null)
+      
+      try {
+        const result = await getWriterAnalytics(timeRange)
+        
+        if (result.success && result.data) {
+          setStats(result.data)
+        } else {
+          setError(result.error || 'Failed to load analytics data')
+        }
+      } catch (err) {
+        console.error('Error fetching analytics:', err)
+        setError('An unexpected error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchAnalytics()
   }, [timeRange])
 
   if (loading) {
@@ -97,6 +95,33 @@ export default function AnalyticsPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
           <p className="text-muted-foreground">Loading analytics...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 mb-4">
+            <p className="text-destructive font-semibold">Error Loading Analytics</p>
+            <p className="text-sm text-muted-foreground mt-1">{error}</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (!stats) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">No analytics data available</p>
       </div>
     )
   }
@@ -375,22 +400,8 @@ export default function AnalyticsPage() {
                 <CardTitle>Geographic Distribution</CardTitle>
                 <CardDescription>Where your readers are from</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {stats.readerDemographics.byRegion.map((region) => (
-                  <div key={region.name}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">{region.name}</span>
-                      <span className="text-sm text-muted-foreground">{region.count.toLocaleString()} readers</span>
-                    </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div
-                        className="bg-purple-500 h-2 rounded-full"
-                        style={{ width: `${region.value}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">{region.value}%</p>
-                  </div>
-                ))}
+              <CardContent>
+                <WorldMap data={stats.readerDemographics.byRegion} />
               </CardContent>
             </Card>
           </div>

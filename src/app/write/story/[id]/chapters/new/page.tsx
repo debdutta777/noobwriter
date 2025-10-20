@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createChapter, publishChapter } from '@/app/actions/writer-actions'
 import { Save, Eye, Lock, Unlock } from 'lucide-react'
+import RichTextEditor from '@/components/editor/RichTextEditor'
 
 export default function NewChapterPage() {
   const router = useRouter()
@@ -116,17 +117,10 @@ export default function NewChapterPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="content">Content</Label>
-                    <textarea
-                      id="content"
+                    <RichTextEditor
                       value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      placeholder="Start writing your chapter here...
-
-You can use simple formatting:
-- Paragraphs are separated by empty lines
-- Use asterisks for *emphasis*
-- Use quotation marks for dialogue"
-                      className="w-full min-h-[600px] rounded-md border border-input bg-background px-4 py-3 text-base font-mono leading-relaxed ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none"
+                      onChange={(content) => setFormData({ ...formData, content })}
+                      placeholder="Start writing your chapter here... Use the toolbar above for formatting."
                     />
                   </div>
                 </CardContent>
