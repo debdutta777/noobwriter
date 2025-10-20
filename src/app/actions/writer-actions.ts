@@ -37,13 +37,13 @@ export async function getWriterDashboardData() {
     const totalChapters = mySeries.reduce((sum, s) => sum + (s.total_chapters || 0), 0)
     const totalViews = mySeries.reduce((sum, s) => sum + (s.total_views || 0), 0)
     const avgRating = mySeries.length > 0
-      ? mySeries.reduce((sum, s) => sum + (s.avg_rating || 0), 0) / mySeries.length
+      ? mySeries.reduce((sum, s) => sum + (s.average_rating || 0), 0) / mySeries.length
       : 0
 
     // Get recent chapters (last 5)
     const { data: chapters } = await supabase
       .from('chapters')
-      .select('id, title, chapter_number, views, published_at, series_id')
+      .select('id, title, chapter_number, view_count, published_at, series_id')
       .in('series_id', mySeries.map(s => s.id))
       .eq('is_published', true)
       .order('published_at', { ascending: false })
@@ -53,7 +53,12 @@ export async function getWriterDashboardData() {
     const recentChapters = (chapters || []).map(chapter => {
       const seriesInfo = mySeries.find(s => s.id === chapter.series_id)
       return {
-        ...chapter,
+        id: chapter.id,
+        title: chapter.title,
+        chapter_number: chapter.chapter_number,
+        views: chapter.view_count || 0,
+        published_at: chapter.published_at,
+        series_id: chapter.series_id,
         series_title: seriesInfo?.title || 'Unknown',
       }
     })
@@ -95,9 +100,9 @@ export async function getWriterDashboardData() {
           content_type: s.content_type,
           total_chapters: s.total_chapters || 0,
           total_views: s.total_views || 0,
-          avg_rating: s.avg_rating || 0,
+          avg_rating: s.average_rating || 0,
           is_published: s.is_published,
-          last_chapter_at: s.last_chapter_at,
+          last_chapter_at: s.updated_at,
         })),
         recentChapters,
         earnings: {
@@ -301,5 +306,44 @@ export async function publishChapter(chapterId: string) {
     return { success: true, error: null }
   } catch (error) {
     return { success: false, error: 'Failed to publish chapter' }
+  }
+}
+
+export async function toggleSeriesPublish(seriesId: string, publish: boolean) {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { success: false, error: 'Not authenticated' }
+  }
+
+  try {
+    // Verify ownership
+    const { data: series } = await supabase
+      .from('series')
+      .select('author_id')
+      .eq('id', seriesId)
+      .single()
+
+    if (!series || series.author_id !== user.id) {
+      return { success: false, error: 'Not authorized' }
+    }
+
+    const { error } = await supabase
+      .from('series')
+      .update({
+        is_published: publish,
+        published_at: publish ? new Date().toISOString() : null,
+      })
+      .eq('id', seriesId)
+
+    if (error) {
+      return { success: false, error: error.message }
+    }
+
+    return { success: true, error: null }
+  } catch (error) {
+    return { success: false, error: 'Failed to update series publish status' }
   }
 }

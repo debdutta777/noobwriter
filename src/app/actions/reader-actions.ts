@@ -39,10 +39,10 @@ export async function browseSeries(filters: {
         query = query.order('total_views', { ascending: false })
         break
       case 'latest':
-        query = query.order('last_chapter_at', { ascending: false, nullsFirst: false })
+        query = query.order('updated_at', { ascending: false })
         break
       case 'rating':
-        query = query.order('avg_rating', { ascending: false })
+        query = query.order('average_rating', { ascending: false })
         break
       case 'new':
         query = query.order('created_at', { ascending: false })
@@ -68,7 +68,7 @@ export async function browseSeries(filters: {
       cover: s.cover_url,
       contentType: s.content_type,
       genres: s.genres || [],
-      rating: s.avg_rating || 0,
+      rating: s.average_rating || 0,
       views: s.total_views || 0,
       chapters: s.total_chapters || 0,
       status: s.status || 'ongoing',

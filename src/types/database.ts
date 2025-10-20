@@ -57,7 +57,8 @@ export interface Database {
           title: string
           slug: string
           description: string | null
-          cover_image_url: string | null
+          synopsis: string | null
+          cover_url: string | null
           content_type: 'novel' | 'manga'
           status: 'ongoing' | 'completed' | 'hiatus'
           genres: string[]
@@ -69,6 +70,7 @@ export interface Database {
           total_favorites: number
           average_rating: number | null
           is_featured: boolean
+          is_published: boolean
           published_at: string | null
           created_at: string
           updated_at: string
@@ -79,7 +81,8 @@ export interface Database {
           title: string
           slug: string
           description?: string | null
-          cover_image_url?: string | null
+          synopsis?: string | null
+          cover_url?: string | null
           content_type: 'novel' | 'manga'
           status?: 'ongoing' | 'completed' | 'hiatus'
           genres?: string[]
@@ -91,6 +94,7 @@ export interface Database {
           total_favorites?: number
           average_rating?: number | null
           is_featured?: boolean
+          is_published?: boolean
           published_at?: string | null
           created_at?: string
           updated_at?: string
@@ -101,7 +105,8 @@ export interface Database {
           title?: string
           slug?: string
           description?: string | null
-          cover_image_url?: string | null
+          synopsis?: string | null
+          cover_url?: string | null
           content_type?: 'novel' | 'manga'
           status?: 'ongoing' | 'completed' | 'hiatus'
           genres?: string[]
@@ -113,6 +118,7 @@ export interface Database {
           total_favorites?: number
           average_rating?: number | null
           is_featured?: boolean
+          is_published?: boolean
           published_at?: string | null
           created_at?: string
           updated_at?: string

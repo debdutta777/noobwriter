@@ -70,7 +70,7 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
         title,
         total_views,
         total_chapters,
-        avg_rating
+        average_rating
       `)
       .eq('author_id', user.id)
       .order('total_views', { ascending: false })
@@ -189,7 +189,7 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
           views: s.total_views || 0,
           readers: s.reader_count || 0,
           revenue: 0, // Calculate from transactions
-          rating: s.avg_rating || 0,
+          rating: s.average_rating || 0,
           trend: 'up' as const,
         })),
         chapterPerformance: chapterPerformance?.map(c => ({

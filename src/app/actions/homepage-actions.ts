@@ -33,15 +33,13 @@ export async function getRecommendedSeries(limit: number = 6): Promise<SeriesCar
       synopsis,
       content_type,
       author:profiles!series_author_id_fkey(display_name),
-      view_count,
+      total_views,
       average_rating,
-      total_ratings,
-      updated_at,
-      chapters:chapters(count)
+      total_chapters,
+      updated_at
     `)
-    .eq('status', 'published')
+    .eq('is_published', true)
     .order('average_rating', { ascending: false })
-    .order('total_ratings', { ascending: false })
     .limit(limit)
 
   if (error) {
@@ -53,15 +51,15 @@ export async function getRecommendedSeries(limit: number = 6): Promise<SeriesCar
     id: series.id,
     title: series.title,
     cover_url: series.cover_url,
-    synopsis: series.synopsis,
+    synopsis: series.synopsis || '',
     content_type: series.content_type,
     author_name: Array.isArray(series.author) && series.author.length > 0 
       ? series.author[0].display_name 
       : 'Anonymous',
-    total_chapters: series.chapters?.[0]?.count || 0,
+    total_chapters: series.total_chapters || 0,
     average_rating: series.average_rating || 0,
-    total_ratings: series.total_ratings || 0,
-    view_count: series.view_count || 0,
+    total_ratings: 0, // We'll calculate this separately if needed
+    view_count: series.total_views || 0,
     updated_at: series.updated_at
   }))
 }
@@ -70,7 +68,7 @@ export async function getRecentlyUpdatedSeries(limit: number = 6): Promise<Serie
   const supabase = await createClient()
   
   // Get series that have recently updated chapters
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('series')
     .select(`
       id,
@@ -79,13 +77,12 @@ export async function getRecentlyUpdatedSeries(limit: number = 6): Promise<Serie
       synopsis,
       content_type,
       author:profiles!series_author_id_fkey(display_name),
-      view_count,
+      total_views,
       average_rating,
-      total_ratings,
-      updated_at,
-      chapters:chapters(count)
+      total_chapters,
+      updated_at
     `)
-    .eq('status', 'published')
+    .eq('is_published', true)
     .order('updated_at', { ascending: false })
     .limit(limit)
 
@@ -98,15 +95,15 @@ export async function getRecentlyUpdatedSeries(limit: number = 6): Promise<Serie
     id: series.id,
     title: series.title,
     cover_url: series.cover_url,
-    synopsis: series.synopsis,
+    synopsis: series.synopsis || '',
     content_type: series.content_type,
     author_name: Array.isArray(series.author) && series.author.length > 0 
       ? series.author[0].display_name 
       : 'Anonymous',
-    total_chapters: series.chapters?.[0]?.count || 0,
+    total_chapters: series.total_chapters || 0,
     average_rating: series.average_rating || 0,
-    total_ratings: series.total_ratings || 0,
-    view_count: series.view_count || 0,
+    total_ratings: 0,
+    view_count: series.total_views || 0,
     updated_at: series.updated_at
   }))
 }
@@ -127,15 +124,14 @@ export async function getCategoryRankings(): Promise<CategoryRanking[]> {
         synopsis,
         content_type,
         author:profiles!series_author_id_fkey(display_name),
-        view_count,
+        total_views,
         average_rating,
-        total_ratings,
-        updated_at,
-        chapters:chapters(count)
+        total_chapters,
+        updated_at
       `)
-      .eq('status', 'published')
+      .eq('is_published', true)
       .contains('genres', [genre])
-      .order('view_count', { ascending: false })
+      .order('total_views', { ascending: false })
       .limit(5)
 
     if (!error && data) {
@@ -145,15 +141,15 @@ export async function getCategoryRankings(): Promise<CategoryRanking[]> {
           id: series.id,
           title: series.title,
           cover_url: series.cover_url,
-          synopsis: series.synopsis,
+          synopsis: series.synopsis || '',
           content_type: series.content_type,
           author_name: Array.isArray(series.author) && series.author.length > 0 
             ? series.author[0].display_name 
             : 'Anonymous',
-          total_chapters: series.chapters?.[0]?.count || 0,
+          total_chapters: series.total_chapters || 0,
           average_rating: series.average_rating || 0,
-          total_ratings: series.total_ratings || 0,
-          view_count: series.view_count || 0,
+          total_ratings: 0,
+          view_count: series.total_views || 0,
           updated_at: series.updated_at
         }))
       })

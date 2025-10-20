@@ -439,6 +439,19 @@ export default function WriterDashboardPage() {
                                 View
                               </Button>
                             </Link>
+                            <Button
+                              size="sm"
+                              variant={series.is_published ? "outline" : "default"}
+                              onClick={async () => {
+                                const { toggleSeriesPublish } = await import('@/app/actions/writer-actions')
+                                const result = await toggleSeriesPublish(series.id, !series.is_published)
+                                if (result.success) {
+                                  loadDashboard()
+                                }
+                              }}
+                            >
+                              {series.is_published ? 'Unpublish' : 'Publish'}
+                            </Button>
                             {!series.is_published && (
                               <span className="ml-auto text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600 dark:text-yellow-400">
                                 Draft
