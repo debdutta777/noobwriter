@@ -246,13 +246,25 @@ export async function createChapter(formData: {
       return { success: false, error: 'Not authorized' }
     }
 
+    // Generate slug from title
+    const slug = formData.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .substring(0, 100) + '-' + Date.now()
+
+    // Calculate word count from content
+    const wordCount = formData.content.trim().split(/\s+/).filter(Boolean).length
+
     const { data, error } = await supabase
       .from('chapters')
       .insert({
         series_id: formData.series_id,
         title: formData.title,
+        slug: slug,
         content: formData.content,
         chapter_number: formData.chapter_number,
+        word_count: wordCount,
         is_premium: formData.is_premium,
         coin_price: formData.coin_price,
         is_published: false,
