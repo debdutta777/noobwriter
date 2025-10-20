@@ -1,6 +1,101 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, BookOpen, Sparkles, TrendingUp } from 'lucide-react'
+import { ArrowRight, BookOpen, Sparkles, TrendingUp, Clock, Star, TrendingUpIcon } from 'lucide-react'
+import { getHomepageData } from '@/app/actions/homepage-actions'
+import SeriesCard from '@/components/series/SeriesCard'
+import { Suspense } from 'react'
+
+async function HomepageSections() {
+  const data = await getHomepageData()
+
+  return (
+    <>
+      {/* Recommended Section */}
+      {data.recommended.length > 0 && (
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold flex items-center gap-2">
+                  <Star className="w-8 h-8 text-primary" />
+                  Recommended for You
+                </h2>
+                <p className="text-muted-foreground mt-2">Top-rated stories you might love</p>
+              </div>
+              <Button variant="outline" asChild>
+                <Link href="/browse">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {data.recommended.map((series) => (
+                <SeriesCard key={series.id} series={series} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Recent Updates Section */}
+      {data.recentlyUpdated.length > 0 && (
+        <section className="py-16">
+          <div className="container mx-auto px-4">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-3xl font-bold flex items-center gap-2">
+                  <Clock className="w-8 h-8 text-primary" />
+                  Recently Updated
+                </h2>
+                <p className="text-muted-foreground mt-2">Fresh chapters just dropped</p>
+              </div>
+              <Button variant="outline" asChild>
+                <Link href="/browse?sort=updated">View All <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {data.recentlyUpdated.map((series) => (
+                <SeriesCard key={series.id} series={series} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Category Rankings */}
+      {data.categoryRankings.length > 0 && (
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold flex items-center gap-2">
+                <TrendingUpIcon className="w-8 h-8 text-primary" />
+                Top by Category
+              </h2>
+              <p className="text-muted-foreground mt-2">Popular stories in each genre</p>
+            </div>
+            <div className="space-y-12">
+              {data.categoryRankings.map((category) => (
+                <div key={category.genre}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold">{category.genre}</h3>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link href={`/browse?genre=${category.genre}`}>
+                        View More <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    {category.series.map((series) => (
+                      <SeriesCard key={series.id} series={series} compact />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+    </>
+  )
+}
 
 export default function HomePage() {
   return (
@@ -31,8 +126,18 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Dynamic Content Sections */}
+      <Suspense fallback={
+        <div className="py-20 text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+          <p className="mt-4 text-muted-foreground">Loading stories...</p>
+        </div>
+      }>
+        <HomepageSections />
+      </Suspense>
+
       {/* Features Section */}
-      <section className="py-20 bg-muted/50">
+      <section className="py-20">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-12">
             Why Choose NoobWriter?
@@ -58,7 +163,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
+      <section className="py-20 bg-muted/50">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Start Your Journey?</h2>
           <p className="text-xl text-muted-foreground mb-8">

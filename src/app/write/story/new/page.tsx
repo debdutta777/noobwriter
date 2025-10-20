@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { createSeries } from '@/app/actions/writer-actions'
 import { BookOpen, Image, Tag, Info, CheckCircle } from 'lucide-react'
+import CoverUpload from '@/components/upload/CoverUpload'
 
 const GENRES = [
   'Fantasy', 'Romance', 'Action', 'Adventure', 'Mystery', 'Thriller',
@@ -210,6 +211,15 @@ export default function NewStoryPage() {
                       </p>
                     </button>
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Cover Image (Optional)</Label>
+                  <CoverUpload
+                    currentCoverUrl={formData.cover_url}
+                    onUploadComplete={(url) => setFormData({ ...formData, cover_url: url })}
+                    aspectRatio="portrait"
+                  />
                 </div>
               </CardContent>
             </Card>
