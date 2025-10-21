@@ -90,7 +90,7 @@ export function Navbar() {
       if (walletError || !walletData) {
         await supabase.from('wallets').insert({
           user_id: userId,
-          coin_balance: 100, // Give 100 free coins
+          coin_balance: 5, // Give 5 free coins
         })
       }
 
@@ -103,7 +103,7 @@ export function Navbar() {
       if (profileData) {
         setProfile({
           ...profileData,
-          coin_balance: walletData?.coin_balance || 100,
+          coin_balance: walletData?.coin_balance || 5,
           has_published_series: (count || 0) > 0
         })
       }

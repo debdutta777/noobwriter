@@ -1,24 +1,10 @@
-# NoobWriter Platform - Complete Documentation
+# NoobWriter
 
-> **Last Updated:** December 2024  
-> **Version:** 2.0  
-> **Status:** Production Ready ✅
+> A modern web novel and manga publishing platform built with Next.js 15, Supabase, and TypeScript.
 
----
-
-## 📑 Table of Contents
-
-1. [Quick Start](#quick-start)
-2. [Current Status](#current-status)
-3. [Recent Features](#recent-features)
-4. [Database Setup](#database-setup)
-5. [Project Structure](#project-structure)
-6. [Features Overview](#features-overview)
-7. [Testing Guide](#testing-guide)
-8. [Deployment](#deployment)
-9. [Troubleshooting](#troubleshooting)
-10. [Next Features Roadmap](#next-features-roadmap)
-11. [API Reference](#api-reference)
+[![Next.js](https://img.shields.io/badge/Next.js-15.0-black)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-green)](https://supabase.com/)
 
 ---
 
@@ -26,8 +12,8 @@
 
 ### Prerequisites
 - Node.js >= 20.0.0
+- npm or pnpm
 - Supabase account
-- Vercel account (for deployment)
 
 ### Installation
 
@@ -41,13 +27,245 @@ npm install
 
 # Setup environment variables
 cp .env.example .env.local
-# Edit .env.local with your Supabase credentials
+# Add your Supabase credentials to .env.local
 
 # Run development server
 npm run dev
 ```
 
-### Environment Variables
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## ⚠️ Important: Database Setup
+
+Before running the app, apply these critical migrations in your Supabase dashboard:
+
+1. **Transaction Types** (CRITICAL - Tips and payouts won't work without this!)
+2. **Signup Bonus Update**
+
+See **[docs/DATABASE.md](docs/DATABASE.md)** for detailed migration instructions.
+
+---
+
+## 📚 Documentation
+
+- **[CHANGELOG.md](docs/CHANGELOG.md)** - All feature updates and changes
+- **[DATABASE.md](docs/DATABASE.md)** - Database schema, migrations, and queries
+- **[SETUP.md](docs/SETUP.md)** - Detailed setup and configuration guide
+
+---
+
+## ✨ Key Features
+
+### For Readers
+- 📖 Browse novels and manga
+- ⭐ Favorite series and track reading progress
+- 💰 Tip authors with coins
+- 🔓 Unlock premium chapters
+- 💬 Comment and engage with community
+
+### For Writers
+- ✍️ Write and publish novels/manga
+- 💵 Earn coins from tips and premium chapters
+- 💸 Request payouts (300 coins = ₹100)
+- 📊 Track views and reader engagement
+- 🎨 Customize series covers and metadata
+
+### Platform
+- 🔐 Secure authentication with Supabase Auth
+- 💳 Razorpay payment integration
+- 📈 Analytics with Vercel Analytics
+- 🎨 Modern UI with Tailwind CSS and Shadcn/ui
+- 📱 Fully responsive design
+
+---
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Styling**: Tailwind CSS
+- **UI Components**: Shadcn/ui + Radix UI
+- **Payment**: Razorpay
+- **Analytics**: Vercel Analytics
+- **Deployment**: Vercel
+
+---
+
+## 📁 Project Structure
+
+```
+noobwriter/
+├── docs/                  # Documentation
+├── src/
+│   ├── app/              # Next.js app router
+│   │   ├── (auth)/       # Authentication pages
+│   │   ├── actions/      # Server actions
+│   │   ├── browse/       # Browse series
+│   │   ├── library/      # User library
+│   │   ├── read/         # Chapter reader
+│   │   ├── series/       # Series details
+│   │   └── write/        # Writer dashboard
+│   ├── components/       # React components
+│   │   ├── ui/          # UI primitives
+│   │   ├── layout/      # Layout components
+│   │   └── tip/         # Tipping component
+│   └── lib/             # Utilities
+│       └── supabase/    # Supabase clients
+├── supabase/
+│   └── migrations/       # Database migrations
+└── public/              # Static assets
+```
+
+---
+
+## � Development
+
+```bash
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+
+# Run linter
+npm run lint
+```
+
+---
+
+## 🚢 Deployment
+
+### Vercel (Recommended)
+
+1. Push code to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy
+
+Environment variables needed:
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+
+---
+
+## 📝 Environment Variables
+
+```bash
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Razorpay
+NEXT_PUBLIC_RAZORPAY_KEY_ID=your_razorpay_key
+RAZORPAY_KEY_SECRET=your_razorpay_secret
+
+# App
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Test authentication flow
+# 1. Sign up as new user → Should get 5 coins (after migration)
+# 2. Browse series
+# 3. Add to favorites
+# 4. Read chapters
+
+# Test tipping system
+# 1. Tip an author → Should deduct coins and create transactions
+# 2. Check wallet balance updates
+
+# Test payout system (writers only)
+# 1. Go to /write/earnings
+# 2. Request payout with minimum 3000 coins
+# 3. Check payout history
+```
+
+---
+
+## 🐛 Known Issues
+
+None currently. All features tested and working after latest fixes.
+
+---
+
+## 🗺️ Roadmap
+
+### Phase 1 (Current)
+- [x] Authentication system
+- [x] Series and chapter management
+- [x] Reading experience
+- [x] Tipping system
+- [x] Premium chapters
+- [x] Writer payouts
+
+### Phase 2 (Upcoming)
+- [ ] Admin dashboard for payout approval
+- [ ] Email notifications
+- [ ] Search functionality
+- [ ] Recommendations system
+- [ ] Mobile apps (React Native)
+
+### Phase 3 (Future)
+- [ ] AI writing assistant
+- [ ] Community features (forums, groups)
+- [ ] Live reading events
+- [ ] Merchandise integration
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+---
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+
+---
+
+## 👤 Author
+
+**Debdutta Chakraborty**
+- GitHub: [@debdutta777](https://github.com/debdutta777)
+
+---
+
+## 📧 Support
+
+For issues and questions:
+- Check [docs/DATABASE.md](docs/DATABASE.md) for database issues
+- Check [docs/CHANGELOG.md](docs/CHANGELOG.md) for recent changes
+- Open an issue on GitHub
+
+---
+
+**Last Updated**: October 21, 2025  
+**Status**: Production Ready ✅
 
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://gkhsrwebwdabzmojefry.supabase.co

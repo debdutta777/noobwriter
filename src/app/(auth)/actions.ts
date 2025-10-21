@@ -40,7 +40,7 @@ export async function signUp(formData: FormData) {
     // Create wallet
     await supabase.from('wallets').insert({
       user_id: data.user.id,
-      coin_balance: 100, // Welcome bonus
+      coin_balance: 5, // Welcome bonus
     })
   }
 

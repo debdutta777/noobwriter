@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, Sparkles, TrendingUp, Clock, Star, TrendingUpIcon
 import { getHomepageData } from '@/app/actions/homepage-actions'
 import SeriesCard from '@/components/series/SeriesCard'
 import { Suspense } from 'react'
+import { createClient } from '@/lib/supabase/server'
 
 async function HomepageSections() {
   const data = await getHomepageData()
@@ -97,7 +98,11 @@ async function HomepageSections() {
   )
 }
 
-export default function HomePage() {
+export default async function HomePage() {
+  // Check if user is logged in
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
@@ -163,18 +168,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-pink-600/10">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Ready to Start Your Journey?</h2>
-          <p className="text-xl text-muted-foreground mb-8">
-            Sign up now and get 100 free coins to unlock your first chapters!
-          </p>
-          <Button size="lg" asChild className="bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 hover:from-purple-700 hover:via-blue-700 hover:to-pink-700 text-white">
-            <Link href="/signup">Get Started Free</Link>
-          </Button>
-        </div>
-      </section>
+      {/* CTA Section - Only show for non-logged in users */}
+      {!user && (
+        <section className="py-20 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-pink-600/10">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Ready to Start Your Journey?</h2>
+            <p className="text-xl text-muted-foreground mb-8">
+              Sign up now and get 5 free coins to unlock your first chapters!
+            </p>
+            <Button size="lg" asChild className="bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 hover:from-purple-700 hover:via-blue-700 hover:to-pink-700 text-white">
+              <Link href="/signup">Get Started Free</Link>
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

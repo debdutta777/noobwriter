@@ -35,15 +35,30 @@ export async function sendTip(recipientId: string, amount: number, seriesId?: st
       return { success: false, error: 'Insufficient balance', required: amount, current: senderWallet.coin_balance }
     }
 
-    // Get recipient's wallet
-    const { data: recipientWallet, error: recipientError } = await supabase
+    // Get recipient's wallet (or create if doesn't exist)
+    let { data: recipientWallet, error: recipientError } = await supabase
       .from('wallets')
       .select('coin_balance')
       .eq('user_id', recipientId)
-      .single()
+      .maybeSingle()
 
-    if (recipientError || !recipientWallet) {
-      return { success: false, error: 'Recipient wallet not found' }
+    if (!recipientWallet) {
+      // Create wallet for recipient if it doesn't exist
+      const { data: newWallet, error: createError } = await supabase
+        .from('wallets')
+        .insert({
+          user_id: recipientId,
+          coin_balance: 0,
+        })
+        .select('coin_balance')
+        .single()
+
+      if (createError) {
+        console.error('Error creating recipient wallet:', createError)
+        return { success: false, error: 'Failed to create recipient wallet' }
+      }
+
+      recipientWallet = newWallet
     }
 
     // Deduct from sender
@@ -199,15 +214,30 @@ export async function unlockPremiumChapter(chapterId: string, price: number) {
       }
     }
 
-    // Get author's wallet
-    const { data: authorWallet, error: authorWalletError } = await supabase
+    // Get author's wallet (or create if doesn't exist)
+    let { data: authorWallet } = await supabase
       .from('wallets')
       .select('coin_balance')
       .eq('user_id', authorId)
-      .single()
+      .maybeSingle()
 
-    if (authorWalletError || !authorWallet) {
-      return { success: false, error: 'Author wallet not found' }
+    if (!authorWallet) {
+      // Create wallet for author if it doesn't exist
+      const { data: newWallet, error: createError } = await supabase
+        .from('wallets')
+        .insert({
+          user_id: authorId,
+          coin_balance: 0,
+        })
+        .select('coin_balance')
+        .single()
+
+      if (createError) {
+        console.error('Error creating author wallet:', createError)
+        return { success: false, error: 'Failed to create author wallet' }
+      }
+
+      authorWallet = newWallet
     }
 
     // Deduct from user

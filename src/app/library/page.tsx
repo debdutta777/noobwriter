@@ -76,7 +76,7 @@ export default function LibraryPage() {
     )
   }
 
-  const { user, readingProgress, favorites, transactions } = libraryData
+  const { user, readingProgress, favorites, transactions, chaptersRead } = libraryData
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -135,9 +135,9 @@ export default function LibraryPage() {
             <BookOpen className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-700">147</div>
+            <div className="text-2xl font-bold text-purple-700">{chaptersRead || 0}</div>
             <p className="text-xs text-muted-foreground mt-1">
-              This month
+              Total chapters
             </p>
           </CardContent>
         </Card>
@@ -252,14 +252,14 @@ export default function LibraryPage() {
 
           {favorites && favorites.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {favorites.map((item: any) => (
-                <Link key={item.id} href={`/series/${item.series?.id}`}>
+              {favorites.map((series: any) => (
+                <Link key={series?.id} href={`/series/${series?.id}`}>
                   <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                     <CardHeader className="p-0">
                       <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">
                         <Image
-                          src={item.series?.cover_url || '/placeholder.png'}
-                          alt={item.series?.title || 'Cover'}
+                          src={series?.cover_url || '/placeholder.png'}
+                          alt={series?.title || 'Cover'}
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
@@ -272,20 +272,20 @@ export default function LibraryPage() {
                             <Heart className="h-4 w-4 fill-red-500 text-red-500" />
                           </Button>
                         </div>
-                        {item.series?.avg_rating && (
+                        {series?.average_rating && (
                           <div className="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded flex items-center gap-1">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            <span className="text-xs font-semibold">{item.series.avg_rating.toFixed(1)}</span>
+                            <span className="text-xs font-semibold">{series.average_rating.toFixed(1)}</span>
                           </div>
                         )}
                       </div>
                     </CardHeader>
                     <CardContent className="p-3">
-                      <h3 className="font-semibold line-clamp-2 mb-1">{item.series?.title}</h3>
-                      <p className="text-xs text-muted-foreground mb-2">by {item.series?.author}</p>
+                      <h3 className="font-semibold line-clamp-2 mb-1">{series?.title}</h3>
+                      <p className="text-xs text-muted-foreground mb-2">by {series?.profiles?.display_name || 'Anonymous'}</p>
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{item.series?.total_chapters} chapters</span>
-                        <span className="capitalize">{item.series?.status}</span>
+                        <span>{series?.total_chapters || 0} chapters</span>
+                        <span className="capitalize">{series?.status || 'ongoing'}</span>
                       </div>
                     </CardContent>
                   </Card>

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         // Create wallet with welcome bonus
         await supabase.from('wallets').insert({
           user_id: data.user.id,
-          coin_balance: 100, // Welcome bonus
+          coin_balance: 5, // Welcome bonus
         })
       }
     }

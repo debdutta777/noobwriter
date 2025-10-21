@@ -143,11 +143,11 @@ export async function getChapterContent(seriesId: string, chapterNumber: number)
     let isUnlocked = !chapter.is_premium
     if (chapter.is_premium && user) {
       const { data: unlock } = await supabase
-        .from('unlocked_chapters')
+        .from('chapter_unlocks')
         .select('id')
         .eq('user_id', user.id)
         .eq('chapter_id', chapter.id)
-        .single()
+        .maybeSingle()
 
       isUnlocked = !!unlock
     }
@@ -162,23 +162,23 @@ export async function getChapterContent(seriesId: string, chapterNumber: number)
     // Get previous and next chapters
     const { data: prevChapter } = await supabase
       .from('chapters')
-      .select('id, chapter_number, title')
+      .select('chapter_number')
       .eq('series_id', seriesId)
       .eq('is_published', true)
       .lt('chapter_number', chapterNumber)
       .order('chapter_number', { ascending: false })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     const { data: nextChapter } = await supabase
       .from('chapters')
-      .select('id, chapter_number, title')
+      .select('chapter_number')
       .eq('series_id', seriesId)
       .eq('is_published', true)
       .gt('chapter_number', chapterNumber)
       .order('chapter_number', { ascending: true })
       .limit(1)
-      .single()
+      .maybeSingle()
 
     // Get user's coin balance if authenticated
     let userCoins = 0
@@ -203,8 +203,8 @@ export async function getChapterContent(seriesId: string, chapterNumber: number)
       series,
       isUnlocked,
       userCoins,
-      prevChapter: prevChapter || null,
-      nextChapter: nextChapter || null,
+      prevChapter: prevChapter?.chapter_number || null,
+      nextChapter: nextChapter?.chapter_number || null,
       error: null,
     }
   } catch (error) {
@@ -307,16 +307,48 @@ export async function getUserLibrary() {
       .eq('id', user.id)
       .single()
 
-    // Get favorites
-    const { data: favorites } = await supabase
+    // Get favorites with series and author info
+    const { data: favoritesData } = await supabase
       .from('favorites')
-      .select('series(*)')
+      .select(`
+        *,
+        series:series_id (
+          id,
+          title,
+          cover_url,
+          content_type,
+          total_chapters,
+          average_rating,
+          status,
+          author_id,
+          profiles:author_id (
+            display_name,
+            avatar_url
+          )
+        )
+      `)
       .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
 
-    // Get reading progress
+    // Get reading progress with series and chapter info
     const { data: progress } = await supabase
       .from('reading_progress')
-      .select('*, series(*), chapters(*)')
+      .select(`
+        *,
+        series:series_id (
+          id,
+          title,
+          cover_url,
+          content_type,
+          total_chapters,
+          status
+        ),
+        chapters:chapter_id (
+          id,
+          chapter_number,
+          title
+        )
+      `)
       .eq('user_id', user.id)
       .order('last_read_at', { ascending: false })
       .limit(10)
@@ -336,14 +368,32 @@ export async function getUserLibrary() {
       .order('created_at', { ascending: false })
       .limit(20)
 
+    // Get total chapters read (unique chapters with reading progress)
+    const { count: chaptersReadCount } = await supabase
+      .from('reading_progress')
+      .select('chapter_id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+
+    // Map favorites to extract series data
+    const mappedFavorites = (favoritesData || [])
+      .map((fav: any) => fav.series)
+      .filter(Boolean) // Remove any null/undefined series
+
+    // Map reading progress to ensure proper data structure
+    const mappedProgress = (progress || []).map((prog: any) => ({
+      ...prog,
+      last_chapter_read: prog.chapters?.chapter_number || 0,
+    }))
+
     return {
       user: {
         ...profile,
         coin_balance: wallet?.coin_balance || 0,
       },
-      readingProgress: progress || [],
-      favorites: (favorites || []).map((f: any) => f.series),
+      readingProgress: mappedProgress,
+      favorites: mappedFavorites,
       transactions: transactions || [],
+      chaptersRead: chaptersReadCount || 0,
       error: null,
     }
   } catch (error) {
