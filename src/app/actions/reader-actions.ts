@@ -351,7 +351,6 @@ export async function getUserLibrary() {
       `)
       .eq('user_id', user.id)
       .order('last_read_at', { ascending: false })
-      .limit(10)
 
     // Get wallet
     const { data: wallet } = await supabase
@@ -379,11 +378,21 @@ export async function getUserLibrary() {
       .map((fav: any) => fav.series)
       .filter(Boolean) // Remove any null/undefined series
 
-    // Map reading progress to ensure proper data structure
-    const mappedProgress = (progress || []).map((prog: any) => ({
-      ...prog,
-      last_chapter_read: prog.chapters?.chapter_number || 0,
-    }))
+    // Map reading progress to ensure proper data structure and calculate progress percentage
+    const mappedProgress = (progress || [])
+      .map((prog: any) => {
+        const lastChapterRead = prog.chapters?.chapter_number || 0
+        const totalChapters = prog.series?.total_chapters || 1
+        const progressPercentage = Math.round((lastChapterRead / totalChapters) * 100)
+        
+        return {
+          ...prog,
+          last_chapter_read: lastChapterRead,
+          progress_percentage: progressPercentage,
+        }
+      })
+      .filter((prog: any) => prog.progress_percentage < 100) // Only show incomplete series in continue reading
+      .slice(0, 10) // Limit to 10 most recent
 
     return {
       user: {
@@ -399,6 +408,67 @@ export async function getUserLibrary() {
   } catch (error) {
     console.error('Error in getUserLibrary:', error)
     return { user: null, readingProgress: [], favorites: [], transactions: [], error: 'Failed to fetch library data' }
+  }
+}
+
+// ============= READING HISTORY ACTION =============
+
+export async function getReadingHistory() {
+  const supabase = await createClient()
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  
+  if (authError || !user) {
+    return { history: [], error: 'Not authenticated' }
+  }
+
+  try {
+    // Get all reading progress including completed series
+    const { data: history } = await supabase
+      .from('reading_progress')
+      .select(`
+        *,
+        series:series_id (
+          id,
+          title,
+          cover_url,
+          content_type,
+          total_chapters,
+          status,
+          profiles:author_id (
+            display_name
+          )
+        ),
+        chapters:chapter_id (
+          id,
+          chapter_number,
+          title
+        )
+      `)
+      .eq('user_id', user.id)
+      .order('last_read_at', { ascending: false })
+      .limit(50)
+
+    // Map history with progress percentage
+    const mappedHistory = (history || []).map((item: any) => {
+      const lastChapterRead = item.chapters?.chapter_number || 0
+      const totalChapters = item.series?.total_chapters || 1
+      const progressPercentage = Math.round((lastChapterRead / totalChapters) * 100)
+      
+      return {
+        ...item,
+        last_chapter_read: lastChapterRead,
+        progress_percentage: progressPercentage,
+      }
+    })
+
+    return {
+      history: mappedHistory,
+      error: null,
+    }
+  } catch (error) {
+    console.error('Error in getReadingHistory:', error)
+    return { history: [], error: 'Failed to fetch reading history' }
   }
 }
 

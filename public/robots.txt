@@ -1,0 +1,23 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Disallow private pages
+Disallow: /api/
+Disallow: /settings/
+Disallow: /write/
+Disallow: /wallet/
+Disallow: /(auth)/
+
+# Allow important pages
+Allow: /novels/
+Allow: /manga/
+Allow: /browse/
+Allow: /series/
+Allow: /read/
+
+# Crawl-delay
+Crawl-delay: 1
+
+# Sitemap
+Sitemap: https://noobwriter.com/sitemap.xml

@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Toaster as SonnerToaster } from '@/components/ui/sonner'
@@ -9,13 +9,24 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { defaultMetadata } from '@/lib/metadata'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
+})
 
-export const metadata: Metadata = {
-  title: 'NoobWriter - Read & Write WebNovels and Manga',
-  description: 'A global platform for writers and readers to publish, discover, and enjoy serialized stories and manga.',
-  keywords: ['webnovel', 'manga', 'light novel', 'fiction', 'reading', 'writing'],
+export const metadata: Metadata = defaultMetadata
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)', color: '#09090b' },
+  ],
 }
 
 export default function RootLayout({
@@ -25,6 +36,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="canonical" href="https://noobwriter.com" />
+        <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE" />
+      </head>
       <body className={inter.className}>
         <ThemeProvider
           attribute="class"

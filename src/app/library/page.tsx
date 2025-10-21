@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getUserLibrary } from '@/app/actions/reader-actions'
+import { getUserLibrary, getReadingHistory } from '@/app/actions/reader-actions'
 import {
   BookOpen,
   Heart,
@@ -27,6 +27,7 @@ export default function LibraryPage() {
   const [activeTab, setActiveTab] = useState('continue-reading')
   const [loading, setLoading] = useState(true)
   const [libraryData, setLibraryData] = useState<any>(null)
+  const [readingHistory, setReadingHistory] = useState<any[]>([])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -51,6 +52,17 @@ export default function LibraryPage() {
 
     loadLibrary()
   }, [])
+
+  // Load history when history tab is active
+  useEffect(() => {
+    async function loadHistory() {
+      if (activeTab === 'history' && readingHistory.length === 0) {
+        const { history } = await getReadingHistory()
+        setReadingHistory(history)
+      }
+    }
+    loadHistory()
+  }, [activeTab, readingHistory.length])
 
   if (loading) {
     return (
@@ -309,15 +321,90 @@ export default function LibraryPage() {
         <TabsContent value="history" className="space-y-4">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">Reading History</h2>
-            <Button variant="outline" size="sm">Clear History</Button>
+            <p className="text-sm text-muted-foreground">All series you've started reading</p>
           </div>
 
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <History className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Reading history coming soon</p>
-            </CardContent>
-          </Card>
+          {readingHistory && readingHistory.length > 0 ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {readingHistory.map((item: any) => (
+                <Card key={item.id} className="overflow-hidden">
+                  <div className="flex">
+                    <div className="relative w-32 h-48 flex-shrink-0">
+                      <Image
+                        src={item.series?.cover_url || '/placeholder.png'}
+                        alt={item.series?.title || 'Cover'}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="flex-1 p-4">
+                      <div className="mb-2">
+                        <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          item.series?.content_type === 'novel'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-purple-600/10 text-purple-600'
+                        }`}>
+                          {item.series?.content_type === 'novel' ? 'Novel' : 'Manga'}
+                        </span>
+                        {item.progress_percentage === 100 && (
+                          <span className="ml-2 px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700">
+                            Completed
+                          </span>
+                        )}
+                      </div>
+                      <Link href={`/series/${item.series_id}`}>
+                        <h3 className="font-semibold text-lg mb-1 hover:text-primary cursor-pointer">
+                          {item.series?.title}
+                        </h3>
+                      </Link>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        by {item.series?.profiles?.display_name || 'Anonymous'}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Last read: Chapter {item.last_chapter_read} of {item.series?.total_chapters}
+                      </p>
+                      <div className="mb-3">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                          <span>{item.progress_percentage}% complete</span>
+                          <span>{new Date(item.last_read_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="w-full bg-muted rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${
+                              item.progress_percentage === 100 ? 'bg-green-600' : 'bg-primary'
+                            }`}
+                            style={{ width: `${item.progress_percentage}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Link href={`/read/${item.series_id}/${item.last_chapter_read}`} className="flex-1">
+                          <Button className="w-full" size="sm">
+                            {item.progress_percentage === 100 ? 'Read Again' : 'Continue'}
+                          </Button>
+                        </Link>
+                        <Link href={`/series/${item.series_id}`}>
+                          <Button variant="outline" size="sm">
+                            Details
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <History className="h-12 w-12 text-muted-foreground mb-4" />
+                <p className="text-muted-foreground mb-4">No reading history yet</p>
+                <Link href="/browse">
+                  <Button>Start Reading</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Wallet Tab */}

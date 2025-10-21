@@ -8,7 +8,7 @@ export default async function EarningsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   
   if (!user) {
-    redirect('/auth/login')
+    redirect('/login')
   }
 
   // Check if user is a writer
@@ -19,7 +19,7 @@ export default async function EarningsPage() {
     .single()
 
   if (!profile || (profile.role !== 'writer' && profile.role !== 'both')) {
-    redirect('/dashboard')
+    redirect('/write/dashboard')
   }
 
   return <EarningsClient />

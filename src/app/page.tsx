@@ -5,6 +5,7 @@ import { getHomepageData } from '@/app/actions/homepage-actions'
 import SeriesCard from '@/components/series/SeriesCard'
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { StructuredData } from '@/components/seo/structured-data'
 
 async function HomepageSections() {
   const data = await getHomepageData()
@@ -104,7 +105,9 @@ export default async function HomePage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <>
+      <StructuredData type="website" />
+      <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-pink-500/10">
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]"></div>
@@ -182,7 +185,8 @@ export default async function HomePage() {
           </div>
         </section>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 
