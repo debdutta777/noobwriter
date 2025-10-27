@@ -200,6 +200,7 @@ export async function cancelExchange(transactionId: string) {
 /**
  * ADMIN FUNCTION: Confirm payment and deduct coins
  * Call this after you've manually transferred money to user
+ * REQUIRES: Admin role
  */
 export async function confirmExchangePayment(
   transactionId: string,
@@ -212,6 +213,24 @@ export async function confirmExchangePayment(
   const supabase = await createClient()
 
   try {
+    // Verify admin access
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile || profile.role !== 'admin') {
+      return { 
+        success: false, 
+        error: 'Access denied: Admin role required' 
+      }
+    }
     // Get transaction details
     const { data: transaction, error: txError } = await supabase
       .from('transactions')
@@ -283,6 +302,7 @@ export async function confirmExchangePayment(
 
 /**
  * ADMIN FUNCTION: Reject exchange request
+ * REQUIRES: Admin role
  */
 export async function rejectExchangeRequest(
   transactionId: string,
@@ -291,6 +311,24 @@ export async function rejectExchangeRequest(
   const supabase = await createClient()
 
   try {
+    // Verify admin access
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile || profile.role !== 'admin') {
+      return { 
+        success: false, 
+        error: 'Access denied: Admin role required' 
+      }
+    }
     // Get transaction details
     const { data: transaction, error: txError } = await supabase
       .from('transactions')
@@ -340,11 +378,30 @@ export async function rejectExchangeRequest(
 
 /**
  * Get all pending exchange requests (for admin)
+ * REQUIRES: Admin role
  */
 export async function getPendingExchanges() {
   const supabase = await createClient()
 
   try {
+    // Verify admin access
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { exchanges: null, error: 'Not authenticated' }
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile || profile.role !== 'admin') {
+      return { 
+        exchanges: null, 
+        error: 'Access denied: Admin role required' 
+      }
+    }
     const { data: exchanges, error } = await supabase
       .from('transactions')
       .select(`

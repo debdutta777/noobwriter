@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +18,9 @@ import {
   Mail, 
   CreditCard,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Shield,
+  Lock
 } from 'lucide-react'
 import { 
   getPendingExchanges, 
@@ -39,7 +43,11 @@ interface ExchangeRequest {
 }
 
 export default function AdminExchangePage() {
+  const router = useRouter()
+  const supabase = createClient()
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const [exchanges, setExchanges] = useState<ExchangeRequest[]>([])
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [selectedExchange, setSelectedExchange] = useState<ExchangeRequest | null>(null)
@@ -48,7 +56,50 @@ export default function AdminExchangePage() {
   const [notes, setNotes] = useState('')
   const [rejectionReason, setRejectionReason] = useState('')
 
-  const loadExchanges = async () => {
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminAccess = async () => {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        
+        if (authError || !user) {
+          router.push('/login?redirect=/admin/exchanges')
+          return
+        }
+
+        // Get user profile to check role
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError || !profile) {
+          toast.error('Failed to verify access')
+          router.push('/')
+          return
+        }
+
+        if (profile.role !== 'admin') {
+          toast.error('Access denied: Admin role required')
+          router.push('/')
+          return
+        }
+
+        setIsAdmin(true)
+        setCheckingAuth(false)
+      } catch (error) {
+        console.error('Error checking admin access:', error)
+        router.push('/')
+      }
+    }
+
+    checkAdminAccess()
+  }, [router, supabase])
+
+  const loadExchanges = useCallback(async () => {
+    if (!isAdmin) return
+    
     setLoading(true)
     const { exchanges: data, error } = await getPendingExchanges()
     if (!error && data) {
@@ -57,11 +108,13 @@ export default function AdminExchangePage() {
       toast.error('Failed to load exchanges')
     }
     setLoading(false)
-  }
+  }, [isAdmin])
 
   useEffect(() => {
-    loadExchanges()
-  }, [])
+    if (isAdmin) {
+      loadExchanges()
+    }
+  }, [isAdmin, loadExchanges])
 
   const handleConfirm = async (exchangeId: string) => {
     if (!confirm('Confirm that you have transferred the money to the user?')) return
@@ -110,6 +163,34 @@ export default function AdminExchangePage() {
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
     toast.success(`${label} copied to clipboard`)
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Shield className="w-16 h-16 mx-auto mb-4 text-primary animate-pulse" />
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Verifying admin access...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-12 text-center">
+            <Lock className="w-16 h-16 mx-auto mb-4 text-destructive" />
+            <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
+            <p className="text-muted-foreground">
+              You need admin privileges to access this page.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (loading) {
