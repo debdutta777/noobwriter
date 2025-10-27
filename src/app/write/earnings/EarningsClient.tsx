@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Coins, TrendingUp, Wallet, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react'
-import { requestPayout, getPayoutInfo, getPayoutHistory, cancelPayoutRequest } from '@/app/actions/payout-actions'
+import { Coins, TrendingUp, Wallet, AlertCircle, CheckCircle, Clock, XCircle, Heart, Lock, ShoppingCart, DollarSign } from 'lucide-react'
+import { requestPayout, getPayoutInfo, getPayoutHistory, cancelPayoutRequest, getEarningsBreakdown } from '@/app/actions/payout-actions'
 import { toast } from 'sonner'
 
 interface PayoutTransaction {
@@ -32,11 +32,20 @@ export default function EarningsClient() {
   const [payoutAmount, setPayoutAmount] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [payoutHistory, setPayoutHistory] = useState<PayoutTransaction[]>([])
+  const [earningsBreakdown, setEarningsBreakdown] = useState<any>(null)
 
   useEffect(() => {
     loadPayoutInfo()
     loadPayoutHistory()
+    loadEarningsBreakdown()
   }, [])
+
+  const loadEarningsBreakdown = async () => {
+    const { breakdown, error } = await getEarningsBreakdown()
+    if (!error && breakdown) {
+      setEarningsBreakdown(breakdown)
+    }
+  }
 
   const loadPayoutInfo = async () => {
     const info = await getPayoutInfo()
@@ -212,6 +221,106 @@ export default function EarningsClient() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Earnings Breakdown */}
+      {earningsBreakdown && (
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">Earnings Breakdown</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Tips Received */}
+            <Card className="bg-gradient-to-br from-pink-500/10 to-rose-500/10 border-pink-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-pink-500" />
+                  Tips Received
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-pink-600">
+                    {earningsBreakdown.tips.totalCoins.toLocaleString()} coins
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    ≈ ₹{Math.floor(earningsBreakdown.tips.totalCoins / exchangeRate * rupeesPerUnit).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {earningsBreakdown.tips.count} tip{earningsBreakdown.tips.count !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Premium Unlocks */}
+            <Card className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border-purple-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-purple-500" />
+                  Premium Chapters
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-purple-600">
+                    {earningsBreakdown.premiumUnlocks.totalCoins.toLocaleString()} coins
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    ≈ ₹{Math.floor(earningsBreakdown.premiumUnlocks.totalCoins / exchangeRate * rupeesPerUnit).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {earningsBreakdown.premiumUnlocks.count} unlock{earningsBreakdown.premiumUnlocks.count !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Other Purchases */}
+            <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4 text-blue-500" />
+                  Other Purchases
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {earningsBreakdown.purchases.totalCoins.toLocaleString()} coins
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    ≈ ₹{Math.floor(earningsBreakdown.purchases.totalCoins / exchangeRate * rupeesPerUnit).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    {earningsBreakdown.purchases.count} purchase{earningsBreakdown.purchases.count !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Total Earnings */}
+            <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-green-500" />
+                  Total Earnings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="text-2xl font-bold text-green-600">
+                    {earningsBreakdown.total.totalCoins.toLocaleString()} coins
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    ≈ ₹{Math.floor(earningsBreakdown.total.totalCoins / exchangeRate * rupeesPerUnit).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    All time earnings
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {/* Payout Request Form */}
       <Card className="mb-8">

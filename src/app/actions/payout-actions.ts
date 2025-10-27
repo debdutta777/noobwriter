@@ -6,6 +6,125 @@ const EXCHANGE_RATE = 300 // 300 coins = ₹100
 const RUPEES_PER_UNIT = 100 // ₹100
 const MINIMUM_COINS = 3000 // Minimum coins required to request payout
 
+/**
+ * Get detailed earnings breakdown
+ */
+export async function getEarningsBreakdown() {
+  const supabase = await createClient()
+
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { 
+        breakdown: null, 
+        error: 'Not authenticated' 
+      }
+    }
+
+    // Get all transactions for the user
+    const { data: transactions, error: transactionsError } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (transactionsError) {
+      console.error('Error fetching transactions:', transactionsError)
+      return { 
+        breakdown: null, 
+        error: 'Failed to fetch transactions' 
+      }
+    }
+
+    // Calculate breakdown by type
+    const breakdown = {
+      tips: {
+        count: 0,
+        totalCoins: 0,
+        totalInr: 0,
+      },
+      premiumUnlocks: {
+        count: 0,
+        totalCoins: 0,
+        totalInr: 0,
+      },
+      purchases: {
+        count: 0,
+        totalCoins: 0,
+        totalInr: 0,
+      },
+      payouts: {
+        count: 0,
+        totalCoins: 0,
+        totalInr: 0,
+      },
+      total: {
+        totalCoins: 0,
+        totalInr: 0,
+      }
+    }
+
+    transactions?.forEach((transaction) => {
+      const coins = transaction.coin_amount || 0
+      const inr = transaction.amount || 0
+
+      switch (transaction.type) {
+        case 'tip':
+          if (coins > 0) { // Only count received tips (positive amounts)
+            breakdown.tips.count++
+            breakdown.tips.totalCoins += coins
+            breakdown.tips.totalInr += inr
+          }
+          break
+        case 'unlock':
+        case 'chapter_unlock':
+          if (coins > 0) { // Only count earned coins (positive amounts)
+            breakdown.premiumUnlocks.count++
+            breakdown.premiumUnlocks.totalCoins += coins
+            breakdown.premiumUnlocks.totalInr += inr
+          }
+          break
+        case 'purchase':
+          if (coins > 0) {
+            breakdown.purchases.count++
+            breakdown.purchases.totalCoins += coins
+            breakdown.purchases.totalInr += inr
+          }
+          break
+        case 'payout_request':
+          if (transaction.payment_status === 'completed') {
+            breakdown.payouts.count++
+            breakdown.payouts.totalCoins += Math.abs(coins) // Payouts are negative
+            breakdown.payouts.totalInr += inr
+          }
+          break
+      }
+    })
+
+    // Calculate totals (only positive transactions - earnings, not expenses)
+    breakdown.total.totalCoins = 
+      breakdown.tips.totalCoins + 
+      breakdown.premiumUnlocks.totalCoins + 
+      breakdown.purchases.totalCoins
+
+    breakdown.total.totalInr = 
+      breakdown.tips.totalInr + 
+      breakdown.premiumUnlocks.totalInr + 
+      breakdown.purchases.totalInr
+
+    return { 
+      breakdown, 
+      error: null 
+    }
+  } catch (error) {
+    console.error('Error in getEarningsBreakdown:', error)
+    return { 
+      breakdown: null, 
+      error: 'Failed to fetch earnings breakdown' 
+    }
+  }
+}
+
 export interface PayoutRequest {
   id: string
   user_id: string
