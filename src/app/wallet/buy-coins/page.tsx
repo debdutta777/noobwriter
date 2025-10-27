@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Coins, Check, Sparkles, Star, Crown } from 'lucide-react'
 import { createRazorpayOrder, verifyRazorpayPayment } from '@/app/actions/payment-actions'
 import Script from 'next/script'
+import PaymentSuccessModal from '@/components/payment/PaymentSuccessModal'
 
 declare global {
   interface Window {
@@ -69,6 +70,13 @@ export default function BuyCoinsPage() {
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successData, setSuccessData] = useState<{
+    coinsAmount: number
+    bonusCoins: number
+    newBalance: number
+    transactionId?: string
+  } | null>(null)
 
   const checkAuth = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser()
@@ -140,9 +148,19 @@ export default function BuyCoinsPage() {
 
           if (verifyResult.error) {
             alert('Payment verification failed: ' + verifyResult.error)
+            setProcessing(false)
+            setSelectedPackage(null)
           } else {
-            alert(`✅ Successfully purchased ${totalCoins} coins!\nNew balance: ${verifyResult.newBalance} coins`)
-            router.push('/wallet')
+            // Show success modal
+            setSuccessData({
+              coinsAmount: pkg.amount,
+              bonusCoins: pkg.bonus,
+              newBalance: verifyResult.newBalance || 0,
+              transactionId: response.razorpay_payment_id
+            })
+            setShowSuccessModal(true)
+            setProcessing(false)
+            setSelectedPackage(null)
           }
         },
         modal: {
@@ -334,6 +352,18 @@ export default function BuyCoinsPage() {
           </Card>
         </div>
         </div>
+
+        {/* Success Modal */}
+        {successData && (
+          <PaymentSuccessModal
+            isOpen={showSuccessModal}
+            coinsAmount={successData.coinsAmount}
+            bonusCoins={successData.bonusCoins}
+            newBalance={successData.newBalance}
+            transactionId={successData.transactionId}
+            onCloseAction={() => setShowSuccessModal(false)}
+          />
+        )}
       </div>
     </>
   )

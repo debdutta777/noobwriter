@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { getUserWallet, createCoinPurchase } from '@/app/actions/coin-actions'
 import { useRouter } from 'next/navigation'
+import PaymentSuccessModal from '@/components/payment/PaymentSuccessModal'
 
 interface CoinPackage {
   id: string
@@ -57,6 +58,13 @@ export default function CoinPurchasePage() {
   const [userBalance, setUserBalance] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [successData, setSuccessData] = useState<{
+    coinsAmount: number
+    bonusCoins: number
+    newBalance: number
+    transactionId?: string
+  } | null>(null)
 
   useEffect(() => {
     loadUserBalance()
@@ -112,9 +120,17 @@ export default function CoinPurchasePage() {
             const verifyResult = await verifyResponse.json()
 
             if (verifyResult.success) {
-              // Reload balance and redirect to library
+              // Reload balance
               await loadUserBalance()
-              router.push('/library?tab=wallet&success=true')
+              
+              // Show success modal
+              setSuccessData({
+                coinsAmount: selectedPackage.coins,
+                bonusCoins: selectedPackage.bonus,
+                newBalance: verifyResult.newBalance || userBalance + selectedPackage.coins + selectedPackage.bonus,
+                transactionId: response.razorpay_payment_id
+              })
+              setShowSuccessModal(true)
             } else {
               setError('Payment verification failed')
             }
@@ -307,6 +323,18 @@ export default function CoinPurchasePage() {
             </Card>
           </div>
         </div>
+
+        {/* Success Modal */}
+        {successData && (
+          <PaymentSuccessModal
+            isOpen={showSuccessModal}
+            coinsAmount={successData.coinsAmount}
+            bonusCoins={successData.bonusCoins}
+            newBalance={successData.newBalance}
+            transactionId={successData.transactionId}
+            onCloseAction={() => setShowSuccessModal(false)}
+          />
+        )}
       </div>
     </div>
   )
