@@ -1,6 +1,44 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import type { Database } from '@/types/database'
+
+type WalletInsert = Database['public']['Tables']['wallets']['Insert']
+type WalletUpdate = Database['public']['Tables']['wallets']['Update']
+type TransactionInsert = Database['public']['Tables']['transactions']['Insert']
+
+// Security constants
+const MIN_TIP_AMOUNT = 10
+const MAX_TIP_AMOUNT = 10000
+const RATE_LIMIT_WINDOW_MS = 60000 // 1 minute
+const MAX_TIPS_PER_MINUTE = 10
+
+// Helper function to check rate limit
+async function checkTipRateLimit(userId: string): Promise<{ allowed: boolean; error?: string }> {
+  const supabase = await createClient()
+  const oneMinuteAgo = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString()
+  
+  const { data: recentTips, error } = await supabase
+    .from('transactions')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('type', 'tip')
+    .gte('created_at', oneMinuteAgo)
+  
+  if (error) {
+    console.error('Rate limit check error:', error)
+    return { allowed: true } // Fail open to not block legitimate users
+  }
+  
+  if (recentTips && recentTips.length >= MAX_TIPS_PER_MINUTE) {
+    return { 
+      allowed: false, 
+      error: `Rate limit exceeded. Maximum ${MAX_TIPS_PER_MINUTE} tips per minute. Please wait.` 
+    }
+  }
+  
+  return { allowed: true }
+}
 
 export async function sendTip(recipientId: string, amount: number, seriesId?: string, chapterId?: string) {
   const supabase = await createClient()
@@ -15,135 +53,53 @@ export async function sendTip(recipientId: string, amount: number, seriesId?: st
     return { success: false, error: 'You cannot tip yourself' }
   }
 
-  if (amount <= 0) {
-    return { success: false, error: 'Invalid tip amount' }
+  // Validate tip amount with min/max limits
+  if (amount < MIN_TIP_AMOUNT || amount > MAX_TIP_AMOUNT) {
+    return { 
+      success: false, 
+      error: `Tip amount must be between ${MIN_TIP_AMOUNT} and ${MAX_TIP_AMOUNT} coins` 
+    }
+  }
+
+  // Check rate limit
+  const rateLimitCheck = await checkTipRateLimit(user.id)
+  if (!rateLimitCheck.allowed) {
+    return { success: false, error: rateLimitCheck.error || 'Rate limit exceeded' }
   }
 
   try {
-    // Get sender's wallet
-    const { data: senderWallet, error: senderError } = await supabase
-      .from('wallets')
-      .select('coin_balance')
-      .eq('user_id', user.id)
-      .single()
+    // Use atomic database function for tip processing
+    // This ensures all operations succeed or all fail (ACID transaction)
+    // No admin client needed - function has SECURITY DEFINER
+    const { data, error } = await supabase.rpc('process_tip', {
+      p_sender_id: user.id,
+      p_recipient_id: recipientId,
+      p_amount: amount,
+      p_series_id: seriesId,
+      p_chapter_id: chapterId
+    })
 
-    if (senderError || !senderWallet) {
-      return { success: false, error: 'Wallet not found' }
+    if (error) {
+      console.error('Error in process_tip RPC:', error)
+      return { success: false, error: 'Unable to process tip. Please try again.' }
     }
 
-    if (senderWallet.coin_balance < amount) {
-      return { success: false, error: 'Insufficient balance', required: amount, current: senderWallet.coin_balance }
-    }
-
-    // Get recipient's wallet (or create if doesn't exist)
-    let { data: recipientWallet, error: recipientError } = await supabase
-      .from('wallets')
-      .select('coin_balance')
-      .eq('user_id', recipientId)
-      .maybeSingle()
-
-    if (!recipientWallet) {
-      // Create wallet for recipient if it doesn't exist
-      const { data: newWallet, error: createError } = await supabase
-        .from('wallets')
-        .insert({
-          user_id: recipientId,
-          coin_balance: 0,
-        })
-        .select('coin_balance')
-        .single()
-
-      if (createError) {
-        console.error('Error creating recipient wallet:', createError)
-        return { success: false, error: 'Failed to create recipient wallet' }
+    // Check if the function returned an error
+    if (data && data.length > 0) {
+      const result = data[0]
+      
+      if (!result.success) {
+        return { success: false, error: result.error_message || 'Failed to send tip' }
       }
 
-      recipientWallet = newWallet
+      return { 
+        success: true, 
+        newBalance: result.new_sender_balance,
+        error: null
+      }
     }
 
-    // Deduct from sender
-    const { error: deductError } = await supabase
-      .from('wallets')
-      .update({ 
-        coin_balance: senderWallet.coin_balance - amount,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-
-    if (deductError) {
-      console.error('Error deducting from sender:', deductError)
-      return { success: false, error: 'Failed to deduct coins' }
-    }
-
-    // Add to recipient
-    const { error: addError } = await supabase
-      .from('wallets')
-      .update({ 
-        coin_balance: recipientWallet.coin_balance + amount,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', recipientId)
-
-    if (addError) {
-      console.error('Error adding to recipient:', addError)
-      // Rollback sender deduction
-      await supabase
-        .from('wallets')
-        .update({ 
-          coin_balance: senderWallet.coin_balance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-      return { success: false, error: 'Failed to add coins to recipient' }
-    }
-
-    // Create sender transaction
-    const { error: senderTxError } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: user.id,
-        type: 'tip_sent',
-        amount: -amount,
-        coin_amount: -amount,
-        description: `Tip sent to author`,
-        payment_status: 'completed',
-        metadata: {
-          recipient_id: recipientId,
-          series_id: seriesId,
-          chapter_id: chapterId,
-        }
-      })
-
-    if (senderTxError) {
-      console.error('Error creating sender transaction:', senderTxError)
-    }
-
-    // Create recipient transaction
-    const { error: recipientTxError } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: recipientId,
-        type: 'tip_received',
-        amount: amount,
-        coin_amount: amount,
-        description: `Tip received from reader`,
-        payment_status: 'completed',
-        metadata: {
-          sender_id: user.id,
-          series_id: seriesId,
-          chapter_id: chapterId,
-        }
-      })
-
-    if (recipientTxError) {
-      console.error('Error creating recipient transaction:', recipientTxError)
-    }
-
-    return { 
-      success: true, 
-      newBalance: senderWallet.coin_balance - amount,
-      error: null
-    }
+    return { success: false, error: 'Unexpected response from server' }
   } catch (error) {
     console.error('Error in sendTip:', error)
     return { success: false, error: 'Failed to send tip' }
@@ -194,146 +150,46 @@ export async function unlockPremiumChapter(chapterId: string, price: number) {
       return { success: false, error: 'Author not found' }
     }
 
-    // Get user's wallet
-    const { data: userWallet, error: walletError } = await supabase
-      .from('wallets')
-      .select('coin_balance')
-      .eq('user_id', user.id)
-      .single()
+    // Use atomic database function for chapter unlock
+    // This ensures all operations succeed or all fail (ACID transaction)
+    // No admin client needed - function has SECURITY DEFINER
+    const { data, error } = await supabase.rpc('unlock_premium_chapter', {
+      p_user_id: user.id,
+      p_chapter_id: chapterId,
+      p_author_id: authorId,
+      p_price: actualPrice
+    })
 
-    if (walletError || !userWallet) {
-      return { success: false, error: 'Wallet not found' }
+    if (error) {
+      console.error('Error in unlock_premium_chapter RPC:', error)
+      return { success: false, error: 'Unable to unlock chapter. Please try again.' }
     }
 
-    if (userWallet.coin_balance < actualPrice) {
+    // Check if the function returned an error
+    if (data && data.length > 0) {
+      const result = data[0]
+      
+      if (!result.success) {
+        // Handle specific error cases
+        if (result.error_message === 'Insufficient balance') {
+          return { 
+            success: false, 
+            error: 'Insufficient balance',
+            required: actualPrice
+          }
+        }
+        
+        return { success: false, error: result.error_message || 'Failed to unlock chapter' }
+      }
+
       return { 
-        success: false, 
-        error: 'Insufficient balance', 
-        required: actualPrice, 
-        current: userWallet.coin_balance 
+        success: true, 
+        newBalance: result.new_user_balance,
+        message: 'Chapter unlocked successfully'
       }
     }
 
-    // Get author's wallet (or create if doesn't exist)
-    let { data: authorWallet } = await supabase
-      .from('wallets')
-      .select('coin_balance')
-      .eq('user_id', authorId)
-      .maybeSingle()
-
-    if (!authorWallet) {
-      // Create wallet for author if it doesn't exist
-      const { data: newWallet, error: createError } = await supabase
-        .from('wallets')
-        .insert({
-          user_id: authorId,
-          coin_balance: 0,
-        })
-        .select('coin_balance')
-        .single()
-
-      if (createError) {
-        console.error('Error creating author wallet:', createError)
-        return { success: false, error: 'Failed to create author wallet' }
-      }
-
-      authorWallet = newWallet
-    }
-
-    // Deduct from user
-    const { error: deductError } = await supabase
-      .from('wallets')
-      .update({ 
-        coin_balance: userWallet.coin_balance - actualPrice,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-
-    if (deductError) {
-      console.error('Error deducting coins:', deductError)
-      return { success: false, error: 'Failed to deduct coins' }
-    }
-
-    // Add to author
-    const { error: addError } = await supabase
-      .from('wallets')
-      .update({ 
-        coin_balance: authorWallet.coin_balance + actualPrice,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', authorId)
-
-    if (addError) {
-      console.error('Error adding to author:', addError)
-      // Rollback user deduction
-      await supabase
-        .from('wallets')
-        .update({ 
-          coin_balance: userWallet.coin_balance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.id)
-      return { success: false, error: 'Failed to process payment' }
-    }
-
-    // Create unlock record
-    const { error: unlockError } = await supabase
-      .from('chapter_unlocks')
-      .insert({
-        user_id: user.id,
-        chapter_id: chapterId,
-      })
-
-    if (unlockError) {
-      console.error('Error creating unlock record:', unlockError)
-      // Note: Coins are already transferred, just log the error
-    }
-
-    // Create user transaction
-    const { error: userTxError } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: user.id,
-        type: 'chapter_unlock',
-        amount: -actualPrice,
-        coin_amount: -actualPrice,
-        description: `Unlocked premium chapter`,
-        payment_status: 'completed',
-        metadata: {
-          chapter_id: chapterId,
-          author_id: authorId,
-        }
-      })
-
-    if (userTxError) {
-      console.error('Error creating user transaction:', userTxError)
-    }
-
-    // Create author transaction
-    const { error: authorTxError } = await supabase
-      .from('transactions')
-      .insert({
-        user_id: authorId,
-        type: 'chapter_sale',
-        amount: actualPrice,
-        coin_amount: actualPrice,
-        description: `Chapter sale`,
-        payment_status: 'completed',
-        metadata: {
-          chapter_id: chapterId,
-          buyer_id: user.id,
-        }
-      })
-
-    if (authorTxError) {
-      console.error('Error creating author transaction:', authorTxError)
-    }
-
-    return { 
-      success: true, 
-      newBalance: userWallet.coin_balance - actualPrice,
-      error: null
-    }
+    return { success: false, error: 'Unexpected response from server' }
   } catch (error) {
     console.error('Error in unlockPremiumChapter:', error)
     return { success: false, error: 'Failed to unlock chapter' }

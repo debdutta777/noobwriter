@@ -86,10 +86,12 @@ export default function TipButton({
         setCustomAmount('')
       }, 2000)
     } else {
-      if (result.required && result.current !== undefined) {
-        setError(`Insufficient balance. Need ${result.required} coins, have ${result.current} coins.`)
+      // Check if error includes balance information (for backward compatibility)
+      const errorMsg = result.error || 'Failed to send tip'
+      if (errorMsg.includes('Insufficient balance')) {
+        setError(errorMsg)
       } else {
-        setError(result.error || 'Failed to send tip')
+        setError(errorMsg)
       }
     }
 
