@@ -21,6 +21,7 @@ import {
   DollarSign,
   AlertCircle,
   PenTool,
+  Heart,
 } from 'lucide-react'
 import { getWriterDashboardData } from '@/app/actions/writer-actions'
 import { createClient } from '@/lib/supabase/client'
@@ -56,6 +57,14 @@ interface DashboardData {
     views: number
     series_title: string
     published_at: string
+  }>
+  recentTips: Array<{
+    id: string
+    amount: number
+    description: string
+    created_at: string
+    tipper_name: string
+    series_title: string
   }>
   earnings: {
     thisMonth: number
@@ -499,6 +508,49 @@ export default function WriterDashboardPage() {
                           <p className="text-xs text-muted-foreground">
                             {new Date(chapter.published_at).toLocaleDateString()}
                           </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Recent Tips Received */}
+            {data.recentTips && data.recentTips.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-pink-500" />
+                    Recent Tips Received
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {data.recentTips.map((tip) => (
+                      <div
+                        key={tip.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-pink-500/5 border border-pink-500/10 hover:bg-pink-500/10 transition-colors"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Heart className="w-4 h-4 text-pink-500 fill-pink-500" />
+                            <p className="font-medium text-sm">
+                              +{tip.amount} coins from {tip.tipper_name}
+                            </p>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {tip.series_title}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(tip.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-pink-600">
+                            +{tip.amount}
+                          </p>
+                          <Coins className="w-4 h-4 text-pink-500 ml-auto mt-1" />
                         </div>
                       </div>
                     ))}

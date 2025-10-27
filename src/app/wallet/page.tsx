@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Coins, TrendingUp, TrendingDown, Plus, ArrowRight } from 'lucide-react'
+import { Coins, TrendingUp, TrendingDown, Plus, ArrowRight, ArrowDownUp } from 'lucide-react'
 import Link from 'next/link'
 
 interface Transaction {
@@ -106,13 +106,19 @@ export default function WalletPage() {
                     Buy Coins
                   </Button>
                 </Link>
+                <Link href="/wallet/exchange">
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <ArrowDownUp className="w-5 h-5" />
+                    Exchange to INR
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Quick Actions */}
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
           <Link href="/wallet/buy-coins">
             <Card className="hover:border-primary transition-colors cursor-pointer">
               <CardContent className="p-6">
@@ -123,6 +129,22 @@ export default function WalletPage() {
                   <div>
                     <h3 className="font-semibold">Buy Coins</h3>
                     <p className="text-sm text-muted-foreground">Add funds to wallet</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/wallet/exchange">
+            <Card className="hover:border-primary transition-colors cursor-pointer">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-full bg-blue-500/10">
+                    <ArrowDownUp className="w-6 h-6 text-blue-500" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Exchange to INR</h3>
+                    <p className="text-sm text-muted-foreground">Convert coins to money</p>
                   </div>
                 </div>
               </CardContent>

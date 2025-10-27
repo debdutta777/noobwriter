@@ -79,6 +79,31 @@ export async function getWriterDashboardData() {
       .select('user_id', { count: 'exact', head: true })
       .in('chapter_id', (chapters || []).map(c => c.id))
 
+    // Get recent tips received
+    const { data: tips } = await supabase
+      .from('transactions')
+      .select(`
+        id,
+        coin_amount,
+        description,
+        created_at,
+        metadata
+      `)
+      .eq('user_id', user.id)
+      .eq('type', 'tip')
+      .gte('coin_amount', 0)
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    const recentTips = (tips || []).map(tip => ({
+      id: tip.id,
+      amount: tip.coin_amount,
+      description: tip.description,
+      created_at: tip.created_at,
+      tipper_name: tip.metadata?.tipper_name || 'Anonymous',
+      series_title: tip.metadata?.series_title || 'Unknown',
+    }))
+
     return {
       data: {
         user: {
@@ -105,6 +130,7 @@ export async function getWriterDashboardData() {
           last_chapter_at: s.updated_at,
         })),
         recentChapters,
+        recentTips,
         earnings: {
           thisMonth: thisMonthEarnings * 0.7,
           lastMonth: 0, // Would calculate from previous month

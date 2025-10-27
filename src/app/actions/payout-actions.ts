@@ -2,9 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 
-const EXCHANGE_RATE = 300 // 300 coins = ₹100
+const EXCHANGE_RATE = 2000 // 2000 coins = ₹100
 const RUPEES_PER_UNIT = 100 // ₹100
-const MINIMUM_COINS = 3000 // Minimum coins required to request payout
+const MINIMUM_COINS = 20000 // Minimum coins required to request payout
 
 /**
  * Get detailed earnings breakdown
