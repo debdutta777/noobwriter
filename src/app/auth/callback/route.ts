@@ -39,6 +39,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Redirect to library or home
-  return NextResponse.redirect(`${origin}/library`)
+  // Redirect to homepage
+  return NextResponse.redirect(`${origin}/`)
 }

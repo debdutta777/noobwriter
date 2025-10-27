@@ -46,12 +46,8 @@ export async function signUp(formData: FormData) {
 
   revalidatePath('/', 'layout')
   
-  // Redirect based on role
-  if (role === 'writer' || role === 'both') {
-    redirect('/write/dashboard')
-  } else {
-    redirect('/library')
-  }
+  // Redirect to email confirmation page
+  redirect('/auth/confirm-email')
 }
 
 export async function signIn(formData: FormData) {
@@ -71,7 +67,7 @@ export async function signIn(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect('/')
 }
 
 export async function signOut() {
