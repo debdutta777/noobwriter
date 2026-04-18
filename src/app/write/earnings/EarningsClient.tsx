@@ -62,7 +62,7 @@ export default function EarningsClient() {
   const loadPayoutHistory = async () => {
     const { payouts, error } = await getPayoutHistory()
     if (!error && payouts) {
-      setPayoutHistory(payouts)
+      setPayoutHistory(payouts as unknown as PayoutTransaction[])
     }
   }
 
@@ -149,11 +149,19 @@ export default function EarningsClient() {
           </Badge>
         )
       case 'rejected':
-      case 'cancelled':
+      case 'failed':
         return (
           <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
             <XCircle className="w-3 h-3 mr-1" />
-            {status === 'cancelled' ? 'Cancelled' : 'Rejected'}
+            Rejected
+          </Badge>
+        )
+      case 'cancelled':
+      case 'refunded':
+        return (
+          <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+            <XCircle className="w-3 h-3 mr-1" />
+            Cancelled
           </Badge>
         )
       default:

@@ -9,120 +9,47 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      profiles: {
+      chapter_likes: {
         Row: {
           id: string
-          email: string
-          username: string | null
-          display_name: string | null
-          avatar_url: string | null
-          bio: string | null
-          role: 'reader' | 'writer' | 'admin'
-          kyc_status: 'pending' | 'verified' | 'rejected' | null
-          notification_preferences: Json | null
+          user_id: string
+          chapter_id: string
           created_at: string
-          updated_at: string
         }
         Insert: {
-          id: string
-          email: string
-          username?: string | null
-          display_name?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          role?: 'reader' | 'writer' | 'admin'
-          kyc_status?: 'pending' | 'verified' | 'rejected' | null
-          notification_preferences?: Json | null
+          id?: string
+          user_id: string
+          chapter_id: string
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
-          email?: string
-          username?: string | null
-          display_name?: string | null
-          avatar_url?: string | null
-          bio?: string | null
-          role?: 'reader' | 'writer' | 'admin'
-          kyc_status?: 'pending' | 'verified' | 'rejected' | null
-          notification_preferences?: Json | null
+          user_id?: string
+          chapter_id?: string
           created_at?: string
-          updated_at?: string
         }
+        Relationships: []
       }
-      series: {
+      chapter_unlocks: {
         Row: {
           id: string
-          author_id: string
-          title: string
-          slug: string
-          description: string | null
-          synopsis: string | null
-          cover_url: string | null
-          content_type: 'novel' | 'manga'
-          status: 'ongoing' | 'completed' | 'hiatus'
-          genres: string[]
-          tags: string[]
-          language: string
-          age_rating: string
-          total_chapters: number
-          total_views: number
-          total_favorites: number
-          average_rating: number | null
-          is_featured: boolean
-          is_published: boolean
-          published_at: string | null
-          created_at: string
-          updated_at: string
+          user_id: string
+          chapter_id: string
+          unlocked_at: string
         }
         Insert: {
           id?: string
-          author_id: string
-          title: string
-          slug: string
-          description?: string | null
-          synopsis?: string | null
-          cover_url?: string | null
-          content_type: 'novel' | 'manga'
-          status?: 'ongoing' | 'completed' | 'hiatus'
-          genres?: string[]
-          tags?: string[]
-          language?: string
-          age_rating?: string
-          total_chapters?: number
-          total_views?: number
-          total_favorites?: number
-          average_rating?: number | null
-          is_featured?: boolean
-          is_published?: boolean
-          published_at?: string | null
-          created_at?: string
-          updated_at?: string
+          user_id: string
+          chapter_id: string
+          unlocked_at?: string
         }
         Update: {
           id?: string
-          author_id?: string
-          title?: string
-          slug?: string
-          description?: string | null
-          synopsis?: string | null
-          cover_url?: string | null
-          content_type?: 'novel' | 'manga'
-          status?: 'ongoing' | 'completed' | 'hiatus'
-          genres?: string[]
-          tags?: string[]
-          language?: string
-          age_rating?: string
-          total_chapters?: number
-          total_views?: number
-          total_favorites?: number
-          average_rating?: number | null
-          is_featured?: boolean
-          is_published?: boolean
-          published_at?: string | null
-          created_at?: string
-          updated_at?: string
+          user_id?: string
+          chapter_id?: string
+          unlocked_at?: string
         }
+        Relationships: []
       }
       chapters: {
         Row: {
@@ -142,6 +69,8 @@ export interface Database {
           view_count: number
           created_at: string
           updated_at: string
+          likes: number
+          unlock_cost: number | null
         }
         Insert: {
           id?: string
@@ -160,6 +89,8 @@ export interface Database {
           view_count?: number
           created_at?: string
           updated_at?: string
+          likes?: number
+          unlock_cost?: number | null
         }
         Update: {
           id?: string
@@ -178,7 +109,88 @@ export interface Database {
           view_count?: number
           created_at?: string
           updated_at?: string
+          likes?: number
+          unlock_cost?: number | null
         }
+        Relationships: []
+      }
+      comments: {
+        Row: {
+          id: string
+          user_id: string
+          series_id: string | null
+          chapter_id: string | null
+          parent_id: string | null
+          content: string
+          likes: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          series_id?: string | null
+          chapter_id?: string | null
+          parent_id?: string | null
+          content: string
+          likes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          series_id?: string | null
+          chapter_id?: string | null
+          parent_id?: string | null
+          content?: string
+          likes?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      favorites: {
+        Row: {
+          id: string
+          user_id: string
+          series_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          series_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          series_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      follows: {
+        Row: {
+          id: string
+          follower_id: string
+          following_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          follower_id: string
+          following_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          follower_id?: string
+          following_id?: string
+          created_at?: string
+        }
+        Relationships: []
       }
       manga_pages: {
         Row: {
@@ -202,140 +214,52 @@ export interface Database {
           image_url?: string
           created_at?: string
         }
+        Relationships: []
       }
-      wallets: {
+      profiles: {
         Row: {
           id: string
-          user_id: string
-          coin_balance: number
-          total_earned: number
-          total_spent: number
+          email: string
+          username: string | null
+          display_name: string | null
+          avatar_url: string | null
+          bio: string | null
+          role: string
+          kyc_status: string | null
+          notification_preferences: Json | null
           created_at: string
           updated_at: string
+          social_links: Json | null
         }
         Insert: {
-          id?: string
-          user_id: string
-          coin_balance?: number
-          total_earned?: number
-          total_spent?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          coin_balance?: number
-          total_earned?: number
-          total_spent?: number
-          created_at?: string
-          updated_at?: string
-        }
-      }
-      transactions: {
-        Row: {
           id: string
-          user_id: string
-          type: 'purchase' | 'unlock' | 'tip' | 'earning' | 'refund'
-          amount: number
-          coin_amount: number | null
-          description: string
-          reference_id: string | null
-          reference_type: string | null
-          payment_method: string | null
-          payment_status: 'pending' | 'completed' | 'failed' | 'refunded'
-          razorpay_order_id: string | null
-          razorpay_payment_id: string | null
-          metadata: Json | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          type: 'purchase' | 'unlock' | 'tip' | 'earning' | 'refund'
-          amount: number
-          coin_amount?: number | null
-          description: string
-          reference_id?: string | null
-          reference_type?: string | null
-          payment_method?: string | null
-          payment_status?: 'pending' | 'completed' | 'failed' | 'refunded'
-          razorpay_order_id?: string | null
-          razorpay_payment_id?: string | null
-          metadata?: Json | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          type?: 'purchase' | 'unlock' | 'tip' | 'earning' | 'refund'
-          amount?: number
-          coin_amount?: number | null
-          description?: string
-          reference_id?: string | null
-          reference_type?: string | null
-          payment_method?: string | null
-          payment_status?: 'pending' | 'completed' | 'failed' | 'refunded'
-          razorpay_order_id?: string | null
-          razorpay_payment_id?: string | null
-          metadata?: Json | null
-          created_at?: string
-        }
-      }
-      chapter_unlocks: {
-        Row: {
-          id: string
-          user_id: string
-          chapter_id: string
-          unlocked_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          chapter_id: string
-          unlocked_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          chapter_id?: string
-          unlocked_at?: string
-        }
-      }
-      comments: {
-        Row: {
-          id: string
-          user_id: string
-          chapter_id: string
-          content: string
-          parent_id: string | null
-          likes_count: number
-          is_moderated: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          chapter_id: string
-          content: string
-          parent_id?: string | null
-          likes_count?: number
-          is_moderated?: boolean
+          email: string
+          username?: string | null
+          display_name?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          role?: string
+          kyc_status?: string | null
+          notification_preferences?: Json | null
           created_at?: string
           updated_at?: string
+          social_links?: Json | null
         }
         Update: {
           id?: string
-          user_id?: string
-          chapter_id?: string
-          content?: string
-          parent_id?: string | null
-          likes_count?: number
-          is_moderated?: boolean
+          email?: string
+          username?: string | null
+          display_name?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          role?: string
+          kyc_status?: string | null
+          notification_preferences?: Json | null
           created_at?: string
           updated_at?: string
+          social_links?: Json | null
         }
+        Relationships: []
       }
       ratings: {
         Row: {
@@ -365,26 +289,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
-      }
-      favorites: {
-        Row: {
-          id: string
-          user_id: string
-          series_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          series_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          series_id?: string
-          created_at?: string
-        }
+        Relationships: []
       }
       reading_progress: {
         Row: {
@@ -414,13 +319,113 @@ export interface Database {
           last_read_at?: string
           created_at?: string
         }
+        Relationships: []
+      }
+      series: {
+        Row: {
+          id: string
+          author_id: string
+          title: string
+          slug: string
+          description: string | null
+          cover_url: string | null
+          content_type: string
+          status: string
+          genres: string[] | null
+          tags: string[] | null
+          language: string
+          age_rating: string
+          total_chapters: number
+          total_views: number
+          total_favorites: number
+          average_rating: number | null
+          is_featured: boolean
+          published_at: string | null
+          created_at: string
+          updated_at: string
+          total_comments: number
+          is_published: boolean
+          synopsis: string | null
+        }
+        Insert: {
+          id?: string
+          author_id: string
+          title: string
+          slug: string
+          description?: string | null
+          cover_url?: string | null
+          content_type: string
+          status?: string
+          genres?: string[] | null
+          tags?: string[] | null
+          language?: string
+          age_rating?: string
+          total_chapters?: number
+          total_views?: number
+          total_favorites?: number
+          average_rating?: number | null
+          is_featured?: boolean
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+          total_comments?: number
+          is_published?: boolean
+          synopsis?: string | null
+        }
+        Update: {
+          id?: string
+          author_id?: string
+          title?: string
+          slug?: string
+          description?: string | null
+          cover_url?: string | null
+          content_type?: string
+          status?: string
+          genres?: string[] | null
+          tags?: string[] | null
+          language?: string
+          age_rating?: string
+          total_chapters?: number
+          total_views?: number
+          total_favorites?: number
+          average_rating?: number | null
+          is_featured?: boolean
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+          total_comments?: number
+          is_published?: boolean
+          synopsis?: string | null
+        }
+        Relationships: []
+      }
+      series_followers: {
+        Row: {
+          id: string
+          user_id: string
+          series_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          series_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          series_id?: string
+          created_at?: string
+        }
+        Relationships: []
       }
       subscriptions: {
         Row: {
           id: string
           user_id: string
           plan_id: string
-          status: 'active' | 'cancelled' | 'expired'
+          status: string
           start_date: string
           end_date: string
           auto_renew: boolean
@@ -432,7 +437,7 @@ export interface Database {
           id?: string
           user_id: string
           plan_id: string
-          status?: 'active' | 'cancelled' | 'expired'
+          status?: string
           start_date: string
           end_date: string
           auto_renew?: boolean
@@ -444,7 +449,7 @@ export interface Database {
           id?: string
           user_id?: string
           plan_id?: string
-          status?: 'active' | 'cancelled' | 'expired'
+          status?: string
           start_date?: string
           end_date?: string
           auto_renew?: boolean
@@ -452,13 +457,154 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          amount: number
+          coin_amount: number | null
+          description: string
+          reference_id: string | null
+          reference_type: string | null
+          payment_method: string | null
+          payment_status: string
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          amount: number
+          coin_amount?: number | null
+          description: string
+          reference_id?: string | null
+          reference_type?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          amount?: number
+          coin_amount?: number | null
+          description?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          id: string
+          user_id: string
+          coin_balance: number
+          total_earned: number
+          total_spent: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          coin_balance?: number
+          total_earned?: number
+          total_spent?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          coin_balance?: number
+          total_earned?: number
+          total_spent?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_coins: {
+        Args: {
+          p_add_to_earned?: boolean
+          p_amount: number
+          p_user_id: string
+        }
+        Returns: unknown
+      }
+      add_coins_to_wallet: {
+        Args: {
+          p_coins: number
+          p_user_id: string
+        }
+        Returns: unknown
+      }
+      deduct_coins: {
+        Args: {
+          p_amount: number
+          p_user_id: string
+        }
+        Returns: unknown
+      }
+      deduct_coins_from_wallet: {
+        Args: {
+          p_coins: number
+          p_user_id: string
+        }
+        Returns: unknown
+      }
+      increment_chapter_views: {
+        Args: {
+          p_chapter_id: string
+        }
+        Returns: unknown
+      }
+      increment_series_views: {
+        Args: {
+          p_series_id: string
+        }
+        Returns: unknown
+      }
+      process_tip: {
+        Args: {
+          p_amount: number
+          p_chapter_id?: string
+          p_recipient_id: string
+          p_sender_id: string
+          p_series_id?: string
+        }
+        Returns: unknown
+      }
+      unlock_premium_chapter: {
+        Args: {
+          p_author_id: string
+          p_chapter_id: string
+          p_price: number
+          p_user_id: string
+        }
+        Returns: unknown
+      }
     }
     Enums: {
       [_ in never]: never

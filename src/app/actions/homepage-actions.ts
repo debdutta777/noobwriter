@@ -52,7 +52,7 @@ export async function getRecommendedSeries(limit: number = 6): Promise<SeriesCar
     title: series.title,
     cover_url: series.cover_url,
     synopsis: series.synopsis || '',
-    content_type: series.content_type,
+    content_type: (series.content_type === 'manga' ? 'manga' : 'novel') as 'novel' | 'manga',
     author_name: Array.isArray(series.author) && series.author.length > 0 
       ? series.author[0].display_name 
       : 'Anonymous',
@@ -96,7 +96,7 @@ export async function getRecentlyUpdatedSeries(limit: number = 6): Promise<Serie
     title: series.title,
     cover_url: series.cover_url,
     synopsis: series.synopsis || '',
-    content_type: series.content_type,
+    content_type: (series.content_type === 'manga' ? 'manga' : 'novel') as 'novel' | 'manga',
     author_name: Array.isArray(series.author) && series.author.length > 0 
       ? series.author[0].display_name 
       : 'Anonymous',
@@ -142,7 +142,7 @@ export async function getCategoryRankings(): Promise<CategoryRanking[]> {
           title: series.title,
           cover_url: series.cover_url,
           synopsis: series.synopsis || '',
-          content_type: series.content_type,
+          content_type: (series.content_type === 'manga' ? 'manga' : 'novel') as 'novel' | 'manga',
           author_name: Array.isArray(series.author) && series.author.length > 0 
             ? series.author[0].display_name 
             : 'Anonymous',

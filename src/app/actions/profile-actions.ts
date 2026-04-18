@@ -11,6 +11,7 @@ export interface UserProfile {
   role: 'reader' | 'writer' | 'admin'
   coin_balance: number
   created_at: string
+  is_current_user: boolean
   social_links: {
     twitter?: string
     facebook?: string
@@ -24,6 +25,21 @@ export interface UserProfile {
     followers: number
     following: number
   }
+  stories: Array<{
+    id: string
+    title: string
+    cover_url: string | null
+    content_type: string
+    total_chapters: number
+    total_views: number
+    average_rating: number | null
+  }>
+  favorites: Array<{
+    id: string
+    title: string
+    cover_url: string | null
+    content_type: string
+  }>
 }
 
 export async function getUserProfile(username: string) {
@@ -41,36 +57,65 @@ export async function getUserProfile(username: string) {
       return { profile: null, error: 'User not found' }
     }
 
-    // Get stats
-    const [seriesData, chaptersData, followersData, followingData] = await Promise.all([
-      // Count stories
-      supabase
-        .from('series')
-        .select('id, total_views', { count: 'exact' })
-        .eq('author_id', profile.id)
-        .eq('status', 'published'),
-      
-      // Count chapters
-      supabase
-        .from('chapters')
-        .select('id', { count: 'exact' })
-        .eq('author_id', profile.id)
-        .eq('status', 'published'),
-      
-      // Count followers
+    // Stories + view totals for this author
+    const seriesData = await supabase
+      .from('series')
+      .select('id, title, cover_url, content_type, total_chapters, total_views, average_rating', { count: 'exact' })
+      .eq('author_id', profile.id)
+      .eq('is_published', true)
+      .order('updated_at', { ascending: false })
+
+    const seriesIds = (seriesData.data || []).map((s) => s.id)
+
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+
+    // Wallet balance lives on wallets, not profiles
+    const [walletRes, chaptersData, followersData, followingData, favoritesRes] = await Promise.all([
+      supabase.from('wallets').select('coin_balance').eq('user_id', profile.id).maybeSingle(),
+      seriesIds.length > 0
+        ? supabase
+            .from('chapters')
+            .select('id', { count: 'exact', head: true })
+            .in('series_id', seriesIds)
+            .eq('is_published', true)
+        : Promise.resolve({ count: 0 } as { count: number }),
       supabase
         .from('follows')
-        .select('id', { count: 'exact' })
+        .select('id', { count: 'exact', head: true })
         .eq('following_id', profile.id),
-      
-      // Count following
       supabase
         .from('follows')
-        .select('id', { count: 'exact' })
-        .eq('follower_id', profile.id)
+        .select('id', { count: 'exact', head: true })
+        .eq('follower_id', profile.id),
+      supabase
+        .from('favorites')
+        .select('series_id')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(24),
     ])
 
-    const totalReads = seriesData.data?.reduce((sum, series) => sum + (series.total_views || 0), 0) || 0
+    const favoriteSeriesIds = (favoritesRes.data || []).map((f) => f.series_id).filter(Boolean)
+    const { data: favoriteSeriesRows } = favoriteSeriesIds.length > 0
+      ? await supabase
+          .from('series')
+          .select('id, title, cover_url, content_type')
+          .in('id', favoriteSeriesIds)
+      : { data: [] as Array<{ id: string; title: string; cover_url: string | null; content_type: string }> }
+
+    const totalReads = seriesData.data?.reduce((sum, s) => sum + (s.total_views || 0), 0) || 0
+
+    const favoritesOrder = new Map(favoriteSeriesIds.map((id, i) => [id, i]))
+    const favorites = (favoriteSeriesRows || [])
+      .slice()
+      .sort((a, b) => (favoritesOrder.get(a.id) ?? 0) - (favoritesOrder.get(b.id) ?? 0))
+
+    const socialLinks = (profile.social_links && typeof profile.social_links === 'object' && !Array.isArray(profile.social_links))
+      ? (profile.social_links as UserProfile['social_links'])
+      : null
+
+    const role: UserProfile['role'] =
+      profile.role === 'writer' || profile.role === 'admin' ? profile.role : 'reader'
 
     const userProfile: UserProfile = {
       id: profile.id,
@@ -78,17 +123,28 @@ export async function getUserProfile(username: string) {
       display_name: profile.display_name || username,
       avatar_url: profile.avatar_url,
       bio: profile.bio,
-      role: profile.role || 'reader',
-      coin_balance: profile.coin_balance || 0,
+      role,
+      coin_balance: walletRes.data?.coin_balance ?? 0,
       created_at: profile.created_at,
-      social_links: profile.social_links,
+      is_current_user: currentUser?.id === profile.id,
+      social_links: socialLinks,
       stats: {
         stories_written: seriesData.count || 0,
         chapters_published: chaptersData.count || 0,
         total_reads: totalReads,
         followers: followersData.count || 0,
-        following: followingData.count || 0
-      }
+        following: followingData.count || 0,
+      },
+      stories: (seriesData.data || []).map((s) => ({
+        id: s.id,
+        title: s.title,
+        cover_url: s.cover_url,
+        content_type: s.content_type,
+        total_chapters: s.total_chapters || 0,
+        total_views: s.total_views || 0,
+        average_rating: s.average_rating,
+      })),
+      favorites,
     }
 
     return { profile: userProfile, error: null }

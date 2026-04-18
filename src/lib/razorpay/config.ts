@@ -1,24 +1,25 @@
 import Razorpay from 'razorpay'
 
-if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-  throw new Error('Missing Razorpay credentials')
+let _instance: Razorpay | null = null
+
+export function getRazorpay(): Razorpay {
+  if (_instance) return _instance
+  const key_id = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+  const key_secret = process.env.RAZORPAY_KEY_SECRET
+  if (!key_id || !key_secret) {
+    throw new Error('Missing Razorpay credentials (NEXT_PUBLIC_RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET)')
+  }
+  _instance = new Razorpay({ key_id, key_secret })
+  return _instance
 }
 
-export const razorpay = new Razorpay({
-  key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+export const razorpay = new Proxy({} as Razorpay, {
+  get(_target, prop) {
+    const r = getRazorpay() as unknown as Record<string | symbol, unknown>
+    return r[prop as string]
+  },
 })
 
-// Coin packages with INR pricing
-export const COIN_PACKAGES = [
-  { coins: 100, price: 99, bonus: 0, popular: false },
-  { coins: 500, price: 449, bonus: 50, popular: true },
-  { coins: 1000, price: 849, bonus: 150, popular: false },
-  { coins: 2500, price: 1999, bonus: 500, popular: false },
-  { coins: 5000, price: 3799, bonus: 1200, popular: false },
-]
-
-// Subscription plans
 export const SUBSCRIPTION_PLANS = [
   {
     id: 'monthly_basic',
@@ -44,7 +45,7 @@ export const SUBSCRIPTION_PLANS = [
 ]
 
 export interface RazorpayOrderOptions {
-  amount: number // in paise
+  amount: number
   currency: string
   receipt: string
   notes?: Record<string, string>

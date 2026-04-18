@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Coins, Check, Sparkles, Star, Crown } from 'lucide-react'
 import { createRazorpayOrder, verifyRazorpayPayment } from '@/app/actions/payment-actions'
+import { COIN_PACKAGES, type CoinPackage } from '@/lib/coin-packages'
 import Script from 'next/script'
 import PaymentSuccessModal from '@/components/payment/PaymentSuccessModal'
 
@@ -16,51 +17,7 @@ declare global {
   }
 }
 
-interface CoinPackage {
-  id: string
-  amount: number
-  price: number
-  bonus: number
-  popular?: boolean
-  badge?: string
-}
-
-const coinPackages: CoinPackage[] = [
-  {
-    id: 'starter',
-    amount: 100,
-    price: 99,
-    bonus: 0,
-  },
-  {
-    id: 'basic',
-    amount: 500,
-    price: 499,
-    bonus: 50,
-  },
-  {
-    id: 'popular',
-    amount: 1000,
-    price: 899,
-    bonus: 150,
-    popular: true,
-    badge: 'Most Popular',
-  },
-  {
-    id: 'premium',
-    amount: 2000,
-    price: 1699,
-    bonus: 400,
-    badge: 'Best Value',
-  },
-  {
-    id: 'ultimate',
-    amount: 5000,
-    price: 3999,
-    bonus: 1500,
-    badge: 'Ultimate',
-  },
-]
+const coinPackages: CoinPackage[] = COIN_PACKAGES
 
 export default function BuyCoinsPage() {
   const router = useRouter()
@@ -106,8 +63,8 @@ export default function BuyCoinsPage() {
     try {
       const totalCoins = pkg.amount + pkg.bonus
 
-      // Create Razorpay order
-      const orderResult = await createRazorpayOrder(pkg.price, pkg.id)
+      // Create Razorpay order (server decides price from packageId)
+      const orderResult = await createRazorpayOrder(pkg.id)
 
       if (orderResult.error || !orderResult.orderId) {
         throw new Error(orderResult.error || 'Failed to create order')
@@ -141,8 +98,6 @@ export default function BuyCoinsPage() {
             response.razorpay_order_id,
             response.razorpay_payment_id,
             response.razorpay_signature,
-            totalCoins,
-            pkg.price,
             pkg.id
           )
 

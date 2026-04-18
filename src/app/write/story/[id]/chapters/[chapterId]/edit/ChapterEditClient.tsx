@@ -8,9 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
-import { ArrowLeft, Save, Eye, Trash2 } from 'lucide-react'
+import { ArrowLeft, Save, Eye } from 'lucide-react'
 import RichTextEditor from '@/components/editor/RichTextEditor'
+import MangaPagesUpload, { MangaPageItem } from '@/components/upload/MangaPagesUpload'
 import { createClient } from '@/lib/supabase/client'
+import { saveMangaPages } from '@/app/actions/manga-actions'
 
 interface Chapter {
   id: string
@@ -32,16 +34,25 @@ interface Chapter {
 interface ChapterEditClientProps {
   chapter: Chapter
   seriesId: string
+  contentType?: 'novel' | 'manga'
+  initialPages?: MangaPageItem[]
 }
 
-export default function ChapterEditClient({ chapter, seriesId }: ChapterEditClientProps) {
+export default function ChapterEditClient({
+  chapter,
+  seriesId,
+  contentType = 'novel',
+  initialPages = [],
+}: ChapterEditClientProps) {
   const router = useRouter()
   const supabase = createClient()
   const [isSaving, setIsSaving] = useState(false)
+  const [pages, setPages] = useState<MangaPageItem[]>(initialPages)
+  const isManga = contentType === 'manga'
 
   const [formData, setFormData] = useState({
     title: chapter.title,
-    content: chapter.content,
+    content: chapter.content || '',
     chapter_number: chapter.chapter_number,
     is_premium: chapter.is_premium,
     coin_price: chapter.coin_price || 10,
@@ -53,8 +64,10 @@ export default function ChapterEditClient({ chapter, seriesId }: ChapterEditClie
     setIsSaving(true)
 
     try {
-      // Calculate word count
-      const calculatedWordCount = formData.content.trim().split(/\s+/).filter(Boolean).length
+      // Calculate word count (novels only)
+      const calculatedWordCount = isManga
+        ? 0
+        : formData.content.trim().split(/\s+/).filter(Boolean).length
 
       // Generate new slug if title changed
       const slug = formData.title !== chapter.title
@@ -70,7 +83,7 @@ export default function ChapterEditClient({ chapter, seriesId }: ChapterEditClie
         .update({
           title: formData.title,
           slug: slug,
-          content: formData.content,
+          content: isManga ? null : formData.content,
           chapter_number: formData.chapter_number,
           word_count: calculatedWordCount,
           is_premium: formData.is_premium,
@@ -79,10 +92,15 @@ export default function ChapterEditClient({ chapter, seriesId }: ChapterEditClie
         })
         .eq('id', chapter.id)
 
-      if (!error) {
-        router.push(`/write/story/${seriesId}`)
-        router.refresh()
+      if (error) return
+
+      if (isManga) {
+        const result = await saveMangaPages(chapter.id, pages)
+        if (!result.success) return
       }
+
+      router.push(`/write/story/${seriesId}`)
+      router.refresh()
     } finally {
       setIsSaving(false)
     }
@@ -105,13 +123,13 @@ export default function ChapterEditClient({ chapter, seriesId }: ChapterEditClie
             <div>
               <h1 className="text-3xl font-bold mb-2">Edit Chapter</h1>
               <p className="text-muted-foreground">
-                {wordCount.toLocaleString()} words
+                {isManga ? `${pages.length} page${pages.length === 1 ? '' : 's'}` : `${wordCount.toLocaleString()} words`}
               </p>
             </div>
             <div className="flex gap-2">
               <Button
                 onClick={handleSave}
-                disabled={isSaving || !formData.title || !formData.content}
+                disabled={isSaving || !formData.title || (!isManga && !formData.content)}
               >
                 <Save className="w-4 h-4 mr-2" />
                 {isSaving ? 'Saving...' : 'Save Changes'}
@@ -190,14 +208,22 @@ export default function ChapterEditClient({ chapter, seriesId }: ChapterEditClie
 
             <Card>
               <CardHeader>
-                <CardTitle>Chapter Content</CardTitle>
+                <CardTitle>{isManga ? 'Chapter Pages' : 'Chapter Content'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <RichTextEditor
-                  value={formData.content}
-                  onChange={(content: string) => setFormData({ ...formData, content })}
-                  placeholder="Write your chapter here..."
-                />
+                {isManga ? (
+                  <MangaPagesUpload
+                    chapterId={chapter.id}
+                    initialPages={initialPages}
+                    onChange={setPages}
+                  />
+                ) : (
+                  <RichTextEditor
+                    value={formData.content}
+                    onChange={(content: string) => setFormData({ ...formData, content })}
+                    placeholder="Write your chapter here..."
+                  />
+                )}
               </CardContent>
             </Card>
           </div>

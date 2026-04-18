@@ -360,7 +360,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
                     <Lock className="h-4 w-4" />
                     Unlock Chapter
                   </Button>
-                  <Link href="/coins/purchase">
+                  <Link href="/wallet/buy-coins">
                     <Button size="lg" variant="outline" className="gap-2">
                       <Coins className="h-4 w-4" />
                       Buy Coins
@@ -377,16 +377,24 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
           {/* Chapter Content */}
           {!needsUnlock && (
             <>
-              <div
-                className="prose prose-gray dark:prose-invert max-w-none mb-8"
-                style={{ fontSize: `${fontSize}px` }}
-              >
-                {chapter.content.split('\n\n').map((paragraph: string, index: number) => (
-                  <p key={index} className="mb-4 leading-relaxed">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
+              {/\<[a-z][\s\S]*\>/i.test(chapter.content || '') ? (
+                <div
+                  className="prose prose-gray dark:prose-invert max-w-none mb-8"
+                  style={{ fontSize: `${fontSize}px` }}
+                  dangerouslySetInnerHTML={{ __html: chapter.content }}
+                />
+              ) : (
+                <div
+                  className="prose prose-gray dark:prose-invert max-w-none mb-8"
+                  style={{ fontSize: `${fontSize}px` }}
+                >
+                  {(chapter.content || '').split('\n\n').map((paragraph: string, index: number) => (
+                    <p key={index} className="mb-4 leading-relaxed">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+              )}
 
               {/* Chapter Stats and Actions */}
               <div className="flex items-center justify-center gap-6 py-6 mb-8 border-y">

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
-export default function CoinPurchasePage() {
+export default function CoinsPage() {
   redirect('/wallet/buy-coins')
 }

@@ -103,7 +103,7 @@ export default function AdminExchangePage() {
     setLoading(true)
     const { exchanges: data, error } = await getPendingExchanges()
     if (!error && data) {
-      setExchanges(data)
+      setExchanges(data as unknown as ExchangeRequest[])
     } else if (error) {
       toast.error('Failed to load exchanges')
     }

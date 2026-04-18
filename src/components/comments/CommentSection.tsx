@@ -36,7 +36,7 @@ export default function CommentSection({ seriesId, chapterId, initialCount = 0 }
     setLoading(true)
     const { comments: data } = await getComments(seriesId, chapterId)
     if (data) {
-      setComments(data)
+      setComments(data as unknown as Comment[])
     }
     setLoading(false)
   }, [seriesId, chapterId])

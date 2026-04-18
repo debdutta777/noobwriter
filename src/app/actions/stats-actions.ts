@@ -71,12 +71,21 @@ export async function updateReadingProgress(
   if (!user) return { success: false, error: 'Not authenticated' }
 
   try {
+    const { data: chapter } = await supabase
+      .from('chapters')
+      .select('series_id')
+      .eq('id', chapterId)
+      .single()
+
+    if (!chapter) return { success: false, error: 'Chapter not found' }
+
     const { error } = await supabase
       .from('reading_progress')
       .upsert({
         user_id: user.id,
         chapter_id: chapterId,
-        progress: Math.min(Math.max(progress, 0), 100),
+        series_id: chapter.series_id,
+        progress_percentage: Math.min(Math.max(progress, 0), 100),
         last_read_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id,chapter_id'

@@ -51,16 +51,19 @@ export default function SettingsPage() {
         return
       }
 
+      const socialLinks = (profile.social_links && typeof profile.social_links === 'object' && !Array.isArray(profile.social_links))
+        ? (profile.social_links as { twitter?: string; facebook?: string; instagram?: string; website?: string })
+        : {}
       setFormData({
         display_name: profile.display_name || '',
         bio: profile.bio || '',
         avatar_url: profile.avatar_url || '',
-        social_links: profile.social_links || {
-          twitter: '',
-          facebook: '',
-          instagram: '',
-          website: ''
-        }
+        social_links: {
+          twitter: socialLinks.twitter || '',
+          facebook: socialLinks.facebook || '',
+          instagram: socialLinks.instagram || '',
+          website: socialLinks.website || '',
+        },
       })
       setLoading(false)
     }

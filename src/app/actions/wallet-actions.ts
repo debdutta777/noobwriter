@@ -85,17 +85,18 @@ export async function sendTip(recipientId: string, amount: number, seriesId?: st
     }
 
     // Check if the function returned an error
-    if (data && data.length > 0) {
-      const result = data[0]
-      
+    const rows = data as Array<{ success: boolean; error_message?: string; new_sender_balance?: number }> | null
+    if (rows && rows.length > 0) {
+      const result = rows[0]
+
       if (!result.success) {
         return { success: false, error: result.error_message || 'Failed to send tip' }
       }
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         newBalance: result.new_sender_balance,
-        error: null
+        error: null,
       }
     }
 
@@ -131,7 +132,7 @@ export async function unlockPremiumChapter(chapterId: string, price: number) {
     // Get chapter and author info
     const { data: chapter, error: chapterError } = await supabase
       .from('chapters')
-      .select('*, series(author_id)')
+      .select('id, is_premium, coin_price, series_id')
       .eq('id', chapterId)
       .single()
 
@@ -143,8 +144,14 @@ export async function unlockPremiumChapter(chapterId: string, price: number) {
       return { success: false, error: 'Chapter is not premium' }
     }
 
+    const { data: seriesRow } = await supabase
+      .from('series')
+      .select('author_id')
+      .eq('id', chapter.series_id)
+      .single()
+
     const actualPrice = chapter.coin_price || price
-    const authorId = chapter.series?.author_id
+    const authorId = seriesRow?.author_id
 
     if (!authorId) {
       return { success: false, error: 'Author not found' }
@@ -166,26 +173,27 @@ export async function unlockPremiumChapter(chapterId: string, price: number) {
     }
 
     // Check if the function returned an error
-    if (data && data.length > 0) {
-      const result = data[0]
-      
+    const rows = data as Array<{ success: boolean; error_message?: string; new_user_balance?: number }> | null
+    if (rows && rows.length > 0) {
+      const result = rows[0]
+
       if (!result.success) {
         // Handle specific error cases
         if (result.error_message === 'Insufficient balance') {
-          return { 
-            success: false, 
+          return {
+            success: false,
             error: 'Insufficient balance',
-            required: actualPrice
+            required: actualPrice,
           }
         }
-        
+
         return { success: false, error: result.error_message || 'Failed to unlock chapter' }
       }
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         newBalance: result.new_user_balance,
-        message: 'Chapter unlocked successfully'
+        message: 'Chapter unlocked successfully',
       }
     }
 

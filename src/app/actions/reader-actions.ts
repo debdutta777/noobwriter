@@ -89,7 +89,7 @@ export async function getSeriesDetail(seriesId: string) {
     // Get series info
     const { data: series, error: seriesError } = await supabase
       .from('series')
-      .select('*, profiles(display_name, avatar_url)')
+      .select('*, author:profiles!series_author_id_fkey(display_name, avatar_url)')
       .eq('id', seriesId)
       .single()
 
@@ -98,18 +98,19 @@ export async function getSeriesDetail(seriesId: string) {
     }
 
     // Get chapters
-    const { data: chapters, error: chaptersError } = await supabase
+    const { data: chapters } = await supabase
       .from('chapters')
       .select('*')
       .eq('series_id', seriesId)
       .eq('is_published', true)
       .order('chapter_number', { ascending: true })
 
+    const author = (series.author ?? null) as unknown as { display_name: string | null; avatar_url: string | null } | null
     return {
       series: {
         ...series,
-        author: series.profiles?.display_name || 'Anonymous',
-        authorAvatar: series.profiles?.avatar_url,
+        author: author?.display_name || 'Anonymous',
+        authorAvatar: author?.avatar_url || null,
       },
       chapters: chapters || [],
       error: null,
@@ -198,9 +199,23 @@ export async function getChapterContent(seriesId: string, chapterNumber: number)
       .update({ view_count: (chapter.view_count || 0) + 1 })
       .eq('id', chapter.id)
 
+    // Fetch manga pages if this is a manga series and chapter is accessible
+    let mangaPages: Array<{ page_number: number; image_url: string }> = []
+    const contentType = (series as { content_type?: string } | null)?.content_type === 'manga' ? 'manga' : 'novel'
+    if (contentType === 'manga' && isUnlocked) {
+      const { data: pageRows } = await supabase
+        .from('manga_pages')
+        .select('page_number, image_url')
+        .eq('chapter_id', chapter.id)
+        .order('page_number', { ascending: true })
+      mangaPages = pageRows || []
+    }
+
     return {
       chapter,
       series,
+      contentType,
+      mangaPages,
       isUnlocked,
       userCoins,
       prevChapter: prevChapter?.chapter_number || null,

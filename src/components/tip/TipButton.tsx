@@ -190,7 +190,7 @@ export default function TipButton({
                     variant="link"
                     size="sm"
                     className="mt-2 h-auto p-0 text-red-600"
-                    onClick={() => router.push('/coins/purchase')}
+                    onClick={() => router.push('/wallet/buy-coins')}
                   >
                     Buy More Coins →
                   </Button>

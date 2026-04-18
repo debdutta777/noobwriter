@@ -138,7 +138,7 @@ export default function WriterDashboardPage() {
         setError(result.error)
         console.error('Dashboard error:', result.error)
       } else if (result.data) {
-        setData(result.data)
+        setData(result.data as unknown as DashboardData)
       } else {
         setError('No data returned from dashboard')
       }
@@ -349,8 +349,8 @@ export default function WriterDashboardPage() {
                   <Coins className="w-5 h-5 text-amber-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">₹{data.stats.totalEarnings}</p>
-                  <p className="text-xs text-muted-foreground">Earnings</p>
+                  <p className="text-2xl font-bold">{data.stats.totalEarnings}</p>
+                  <p className="text-xs text-muted-foreground">Coins Earned</p>
                 </div>
               </div>
             </CardContent>
@@ -573,21 +573,30 @@ export default function WriterDashboardPage() {
               <CardContent className="space-y-4">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">This Month</p>
-                  <p className="text-2xl font-bold">₹{data.earnings.thisMonth}</p>
+                  <p className="text-2xl font-bold flex items-center gap-1">
+                    <Coins className="w-5 h-5 text-amber-500" />
+                    {data.earnings.thisMonth}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Last Month</p>
-                  <p className="text-lg">₹{data.earnings.lastMonth}</p>
-                </div>
-                <div className="pt-4 border-t">
-                  <p className="text-sm text-muted-foreground mb-1">Pending Payout</p>
-                  <p className="text-xl font-semibold text-green-600">
-                    ₹{data.earnings.pendingPayout}
+                  <p className="text-lg flex items-center gap-1">
+                    <Coins className="w-4 h-4 text-amber-500" />
+                    {data.earnings.lastMonth}
                   </p>
                 </div>
-                <Button className="w-full" variant="outline">
-                  Request Payout
-                </Button>
+                <div className="pt-4 border-t">
+                  <p className="text-sm text-muted-foreground mb-1">Wallet Balance</p>
+                  <p className="text-xl font-semibold text-green-600 flex items-center gap-1">
+                    <Coins className="w-5 h-5" />
+                    {data.earnings.pendingPayout}
+                  </p>
+                </div>
+                <Link href="/write/earnings">
+                  <Button className="w-full" variant="outline">
+                    Manage Payouts
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 

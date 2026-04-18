@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
 import ProfileClient from './ProfileClient'
+import { getUserProfile } from '@/app/actions/profile-actions'
 
 export const metadata: Metadata = {
   title: 'User Profile',
@@ -14,14 +14,7 @@ interface PageProps {
 
 export default async function ProfilePage({ params }: PageProps) {
   const { username } = await params
-  const supabase = await createClient()
-
-  // Get user profile
-  const { data: profile, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('username', username)
-    .single()
+  const { profile, error } = await getUserProfile(username)
 
   if (error || !profile) {
     notFound()

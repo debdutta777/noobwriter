@@ -31,9 +31,9 @@ export default async function StoryManagementPage({ params }: PageProps) {
 
   return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <StoryManagementClient 
-        series={series} 
-        initialChapters={chapters || []} 
+      <StoryManagementClient
+        series={series as any}
+        initialChapters={(chapters || []) as any}
       />
     </Suspense>
   )

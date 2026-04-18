@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   User,
@@ -33,15 +33,16 @@ interface ProfileClientProps {
 export default function ProfileClient({ profile }: ProfileClientProps) {
   const [isFollowing, setIsFollowing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [isCurrentUser, setIsCurrentUser] = useState(false)
+  const isCurrentUser = profile.is_current_user
 
   useEffect(() => {
+    if (isCurrentUser) return
     async function checkFollow() {
       const { isFollowing: following } = await checkIfFollowing(profile.id)
       setIsFollowing(following)
     }
     checkFollow()
-  }, [profile.id])
+  }, [profile.id, isCurrentUser])
 
   const handleFollowToggle = async () => {
     setIsLoading(true)
@@ -223,26 +224,92 @@ export default function ProfileClient({ profile }: ProfileClientProps) {
           </TabsList>
 
           <TabsContent value="stories">
-            <div className="text-center py-12 text-muted-foreground">
-              <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>Stories will be displayed here</p>
-              <p className="text-sm mt-2">Feature coming soon</p>
-            </div>
+            {profile.stories.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>No published stories yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {profile.stories.map((s) => (
+                  <Link key={s.id} href={`/series/${s.id}`}>
+                    <Card className="group hover:shadow-lg transition-all cursor-pointer h-full">
+                      <div className="relative aspect-[2/3] overflow-hidden rounded-t-lg bg-muted">
+                        {s.cover_url ? (
+                          <Image
+                            src={s.cover_url}
+                            alt={s.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BookOpen className="w-10 h-10 text-muted-foreground" />
+                          </div>
+                        )}
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-semibold bg-black/70 text-white capitalize">
+                          {s.content_type}
+                        </span>
+                      </div>
+                      <CardContent className="p-3">
+                        <h3 className="font-semibold text-sm line-clamp-2 mb-1">{s.title}</h3>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{s.total_chapters} ch</span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="w-3 h-3" />
+                            {s.total_views > 1000 ? `${(s.total_views / 1000).toFixed(1)}K` : s.total_views}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="favorites">
-            <div className="text-center py-12 text-muted-foreground">
-              <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>Favorite stories will be displayed here</p>
-              <p className="text-sm mt-2">Feature coming soon</p>
-            </div>
+            {profile.favorites.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Heart className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>No favorites yet</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                {profile.favorites.map((s) => (
+                  <Link key={s.id} href={`/series/${s.id}`}>
+                    <Card className="group hover:shadow-lg transition-all cursor-pointer h-full">
+                      <div className="relative aspect-[2/3] overflow-hidden rounded-t-lg bg-muted">
+                        {s.cover_url ? (
+                          <Image
+                            src={s.cover_url}
+                            alt={s.title}
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <BookOpen className="w-10 h-10 text-muted-foreground" />
+                          </div>
+                        )}
+                        <span className="absolute top-2 left-2 px-2 py-0.5 rounded text-xs font-semibold bg-black/70 text-white capitalize">
+                          {s.content_type}
+                        </span>
+                      </div>
+                      <CardContent className="p-3">
+                        <h3 className="font-semibold text-sm line-clamp-2">{s.title}</h3>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="activity">
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-              <p>Recent activity will be displayed here</p>
-              <p className="text-sm mt-2">Feature coming soon</p>
+              <p>Recent activity coming soon</p>
             </div>
           </TabsContent>
         </Tabs>

@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { data: series, error } = await supabase
       .from('series')
       .select('id, updated_at, content_type')
-      .eq('status', 'published')
+      .eq('is_published', true)
       .order('updated_at', { ascending: false })
       .limit(5000)
 
@@ -59,7 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const { data: chapters, error: chaptersError } = await supabase
       .from('chapters')
       .select('id, series_id, updated_at')
-      .eq('status', 'published')
+      .eq('is_published', true)
       .order('updated_at', { ascending: false })
       .limit(5000)
 

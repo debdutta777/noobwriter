@@ -444,33 +444,36 @@ export default function LibraryPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {transactions && transactions.map((tx: any) => (
-                  <div key={tx.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-full ${
-                        tx.type === 'purchase' ? 'bg-green-500/10' : 'bg-red-500/10'
-                      }`}>
-                        {tx.type === 'purchase' ? (
-                          <Download className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <Lock className="h-4 w-4 text-red-600" />
-                        )}
+                {transactions && transactions.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-6">No transactions yet</p>
+                )}
+                {transactions && transactions.map((tx: any) => {
+                  const coins = typeof tx.coin_amount === 'number' ? tx.coin_amount : 0
+                  const isIncoming = coins > 0
+                  return (
+                    <div key={tx.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-2 rounded-full ${isIncoming ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                          {isIncoming ? (
+                            <Download className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Lock className="h-4 w-4 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium">{tx.description || `${tx.type} transaction`}</p>
+                          <p className="text-sm text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium">{tx.description || `${tx.type} transaction`}</p>
-                        <p className="text-sm text-muted-foreground">{new Date(tx.created_at).toLocaleDateString()}</p>
+                      <div className="text-right">
+                        <p className={`font-semibold ${isIncoming ? 'text-green-600' : 'text-red-600'}`}>
+                          {isIncoming ? '+' : ''}{coins} coins
+                        </p>
+                        <p className="text-xs text-muted-foreground capitalize">{tx.payment_status || tx.type}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${
-                        tx.amount > 0 ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {tx.amount > 0 ? '+' : ''}{tx.amount} coins
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">{tx.status}</p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </CardContent>
           </Card>

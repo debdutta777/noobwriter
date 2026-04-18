@@ -42,10 +42,10 @@ export default function RatingSection({ seriesId, averageRating = 0, totalRating
     setLoading(true)
     const { ratings: data, userRating: userData } = await getRatings(seriesId)
     if (data) {
-      setRatings(data)
+      setRatings(data as unknown as Rating[])
     }
     if (userData) {
-      setUserRating(userData)
+      setUserRating(userData as unknown as UserRating)
     }
     setLoading(false)
   }, [seriesId])

@@ -191,54 +191,50 @@ export async function requestPayout(coinAmount: number) {
     // Calculate INR amount
     const inrAmount = (coinAmount / EXCHANGE_RATE) * RUPEES_PER_UNIT
 
-    // Create payout request transaction
+    // Atomic deduction via SECURITY DEFINER RPC.
+    const { error: deductError } = await supabase.rpc('deduct_coins_from_wallet', {
+      p_user_id: user.id,
+      p_coins: coinAmount,
+    })
+
+    if (deductError) {
+      console.error('Error deducting coins:', deductError)
+      return { success: false, error: 'Failed to deduct coins (insufficient balance?)' }
+    }
+
     const { data: transaction, error: transactionError } = await supabase
       .from('transactions')
       .insert({
         user_id: user.id,
         type: 'payout_request',
         amount: inrAmount,
-        coin_amount: -coinAmount, // Negative because coins are being withdrawn
+        coin_amount: -coinAmount,
         description: `Payout request: ${coinAmount} coins → ₹${inrAmount}`,
         payment_status: 'pending',
         metadata: {
           payout_status: 'pending',
           exchange_rate: EXCHANGE_RATE,
-          rupees_per_unit: RUPEES_PER_UNIT
-        }
+          rupees_per_unit: RUPEES_PER_UNIT,
+        },
       })
       .select()
       .single()
 
     if (transactionError) {
+      // Refund coins atomically if transaction record failed to insert.
+      await supabase.rpc('add_coins_to_wallet', {
+        p_user_id: user.id,
+        p_coins: coinAmount,
+      })
       console.error('Error creating payout transaction:', transactionError)
       return { success: false, error: 'Failed to create payout request' }
     }
 
-    // Deduct coins from wallet
-    const { error: updateError } = await supabase
-      .from('wallets')
-      .update({ 
-        coin_balance: wallet.coin_balance - coinAmount,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-
-    if (updateError) {
-      console.error('Error updating wallet:', updateError)
-      // Rollback transaction if wallet update fails
-      await supabase
-        .from('transactions')
-        .delete()
-        .eq('id', transaction.id)
-      return { success: false, error: 'Failed to process payout request' }
-    }
-
-    return { 
-      success: true, 
+    return {
+      success: true,
       error: null,
       payoutId: transaction.id,
-      inrAmount 
+      inrAmount,
     }
   } catch (error: any) {
     console.error('Error requesting payout:', error)
@@ -263,6 +259,7 @@ export async function getPayoutHistory() {
       .select('*')
       .eq('user_id', user.id)
       .eq('type', 'payout_request')
+      .or('metadata->>flow.is.null,metadata->>flow.neq.exchange')
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -352,6 +349,7 @@ export async function cancelPayoutRequest(transactionId: string) {
       .eq('id', transactionId)
       .eq('user_id', user.id)
       .eq('type', 'payout_request')
+      .or('metadata->>flow.is.null,metadata->>flow.neq.exchange')
       .single()
 
     if (txError || !transaction) {
@@ -366,46 +364,41 @@ export async function cancelPayoutRequest(transactionId: string) {
       }
     }
 
-    // Refund coins to wallet
-    const { data: wallet } = await supabase
-      .from('wallets')
-      .select('coin_balance')
-      .eq('user_id', user.id)
-      .single()
+    const refundAmount = Math.abs(transaction.coin_amount ?? 0)
 
-    if (!wallet) {
-      return { success: false, error: 'Wallet not found' }
-    }
+    // Atomic refund via SECURITY DEFINER RPC.
+    const { error: refundError } = await supabase.rpc('add_coins_to_wallet', {
+      p_user_id: user.id,
+      p_coins: refundAmount,
+    })
 
-    const refundAmount = Math.abs(transaction.coin_amount)
-
-    // Update wallet balance
-    const { error: walletError } = await supabase
-      .from('wallets')
-      .update({ 
-        coin_balance: wallet.coin_balance + refundAmount,
-        updated_at: new Date().toISOString()
-      })
-      .eq('user_id', user.id)
-
-    if (walletError) {
+    if (refundError) {
+      console.error('Error refunding coins:', refundError)
       return { success: false, error: 'Failed to refund coins' }
     }
 
-    // Update transaction status
+    // Mark the request as refunded (valid payment_status per DB CHECK).
+    const prevMeta = (transaction.metadata && typeof transaction.metadata === 'object' && !Array.isArray(transaction.metadata))
+      ? (transaction.metadata as Record<string, unknown>)
+      : {}
     const { error: updateError } = await supabase
       .from('transactions')
-      .update({ 
-        payment_status: 'cancelled',
+      .update({
+        payment_status: 'refunded',
         metadata: {
-          ...transaction.metadata,
+          ...prevMeta,
           cancelled_at: new Date().toISOString(),
-          refunded: true
-        }
+          refunded: true,
+        },
       })
       .eq('id', transactionId)
 
     if (updateError) {
+      // Best effort: reverse the refund if status update failed.
+      await supabase.rpc('deduct_coins_from_wallet', {
+        p_user_id: user.id,
+        p_coins: refundAmount,
+      })
       return { success: false, error: 'Failed to cancel payout' }
     }
 

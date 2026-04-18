@@ -74,7 +74,7 @@ export function Navbar() {
         if (userData.user) {
           await supabase.from('profiles').insert({
             id: userId,
-            email: userData.user.email,
+            email: userData.user.email ?? '',
             display_name: userData.user.email?.split('@')[0] || 'User',
           })
         }

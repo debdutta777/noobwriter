@@ -63,15 +63,37 @@ export async function getWriterDashboardData() {
       }
     })
 
-    // Get earnings (mock for now - would come from transactions)
-    const { data: transactions } = await supabase
-      .from('transactions')
-      .select('amount, created_at')
-      .eq('user_id', user.id)
-      .eq('type', 'unlock')
-      .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
+    const now = new Date()
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
 
-    const thisMonthEarnings = (transactions || []).reduce((sum, t) => sum + Math.abs(t.amount), 0)
+    // Incoming coin transactions for the author (positive coin_amount on tip/unlock)
+    const { data: thisMonthTx } = await supabase
+      .from('transactions')
+      .select('coin_amount')
+      .eq('user_id', user.id)
+      .in('type', ['tip', 'unlock', 'chapter_unlock'])
+      .gte('coin_amount', 0)
+      .gte('created_at', thisMonthStart)
+
+    const { data: lastMonthTx } = await supabase
+      .from('transactions')
+      .select('coin_amount')
+      .eq('user_id', user.id)
+      .in('type', ['tip', 'unlock', 'chapter_unlock'])
+      .gte('coin_amount', 0)
+      .gte('created_at', lastMonthStart)
+      .lt('created_at', thisMonthStart)
+
+    const thisMonthEarnings = (thisMonthTx || []).reduce((sum, t) => sum + (t.coin_amount || 0), 0)
+    const lastMonthEarnings = (lastMonthTx || []).reduce((sum, t) => sum + (t.coin_amount || 0), 0)
+
+    const { data: wallet } = await supabase
+      .from('wallets')
+      .select('total_earned, total_spent, coin_balance')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    const pendingPayout = wallet?.coin_balance || 0
 
     // Get unique readers (users who unlocked chapters)
     const { count: totalReaders } = await supabase
@@ -95,14 +117,19 @@ export async function getWriterDashboardData() {
       .order('created_at', { ascending: false })
       .limit(10)
 
-    const recentTips = (tips || []).map(tip => ({
-      id: tip.id,
-      amount: tip.coin_amount,
-      description: tip.description,
-      created_at: tip.created_at,
-      tipper_name: tip.metadata?.tipper_name || 'Anonymous',
-      series_title: tip.metadata?.series_title || 'Unknown',
-    }))
+    const recentTips = (tips || []).map((tip) => {
+      const meta = (tip.metadata && typeof tip.metadata === 'object' && !Array.isArray(tip.metadata))
+        ? (tip.metadata as Record<string, unknown>)
+        : {}
+      return {
+        id: tip.id,
+        amount: tip.coin_amount,
+        description: tip.description,
+        created_at: tip.created_at,
+        tipper_name: (meta.tipper_name as string) || 'Anonymous',
+        series_title: (meta.series_title as string) || 'Unknown',
+      }
+    })
 
     return {
       data: {
@@ -114,7 +141,7 @@ export async function getWriterDashboardData() {
           totalSeries,
           totalChapters,
           totalViews,
-          totalEarnings: thisMonthEarnings * 0.7, // 70% revenue share
+          totalEarnings: wallet?.total_earned || 0,
           totalReaders: totalReaders || 0,
           avgRating,
         },
@@ -132,9 +159,9 @@ export async function getWriterDashboardData() {
         recentChapters,
         recentTips,
         earnings: {
-          thisMonth: thisMonthEarnings * 0.7,
-          lastMonth: 0, // Would calculate from previous month
-          pendingPayout: thisMonthEarnings * 0.7,
+          thisMonth: thisMonthEarnings,
+          lastMonth: lastMonthEarnings,
+          pendingPayout,
         },
       },
       error: null,

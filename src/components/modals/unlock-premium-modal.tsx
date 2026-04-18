@@ -156,7 +156,7 @@ export function UnlockPremiumModal({
                   )}
                 </Button>
               ) : (
-                <Link href="/coins/purchase" className="block">
+                <Link href="/wallet/buy-coins" className="block">
                   <Button className="w-full" size="lg">
                     <Coins className="w-4 h-4 mr-2" />
                     Buy More Coins

@@ -48,7 +48,7 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
       .from('transactions')
       .select('coin_amount')
       .eq('user_id', user.id)
-      .eq('transaction_type', 'earning')
+      .in('type', ['tip', 'unlock', 'chapter_unlock'])
       .gte('created_at', startDate.toISOString())
     
     const totalRevenue = revenue?.reduce((sum, t) => sum + (t.coin_amount || 0), 0) || 0
@@ -98,12 +98,12 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
         id,
         title,
         chapter_number,
-        views,
+        view_count,
         series_id
       `)
       .in('series_id', seriesIds)
       .eq('is_published', true)
-      .order('views', { ascending: false })
+      .order('view_count', { ascending: false })
       .limit(10)
 
     // READER DEMOGRAPHICS - Geographic Distribution
@@ -119,7 +119,7 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
       .from('transactions')
       .select('created_at, coin_amount')
       .eq('user_id', user.id)
-      .eq('transaction_type', 'earning')
+      .in('type', ['tip', 'unlock', 'chapter_unlock'])
       .gte('created_at', startDate.toISOString())
       .order('created_at', { ascending: true })
 
@@ -137,19 +137,20 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
 
     // CHAPTER UNLOCKS BY SOURCE
     const { data: unlockTransactions } = await supabase
-      .from('unlocked_chapters')
-      .select('coins_spent')
-      .in('series_id', seriesIds)
-      .gte('unlocked_at', startDate.toISOString())
+      .from('transactions')
+      .select('coin_amount')
+      .eq('user_id', user.id)
+      .in('type', ['unlock', 'chapter_unlock'])
+      .gte('created_at', startDate.toISOString())
 
-    const unlockRevenue = unlockTransactions?.reduce((sum, t) => sum + (t.coins_spent || 0), 0) || 0
+    const unlockRevenue = unlockTransactions?.reduce((sum, t) => sum + (t.coin_amount || 0), 0) || 0
 
     // READING TIMES HEATMAP
     const { data: readingActivity } = await supabase
       .from('reading_progress')
-      .select('updated_at')
+      .select('last_read_at')
       .in('series_id', seriesIds)
-      .gte('updated_at', startDate.toISOString())
+      .gte('last_read_at', startDate.toISOString())
 
     // Group by hour of day
     const readingTimesByHour = Array.from({ length: 24 }, (_, i) => ({
@@ -158,7 +159,7 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
     }))
 
     readingActivity?.forEach(activity => {
-      const hour = new Date(activity.updated_at).getHours()
+      const hour = new Date(activity.last_read_at).getHours()
       readingTimesByHour[hour].count++
     })
 
@@ -195,7 +196,7 @@ export async function getWriterAnalytics(timeRange: '7d' | '30d' | '90d' | 'all'
         chapterPerformance: chapterPerformance?.map(c => ({
           chapter: c.chapter_number,
           title: c.title,
-          views: c.views || 0,
+          views: c.view_count || 0,
           engagement: Math.floor(Math.random() * 20) + 75, // TODO: Calculate real engagement
           revenue: 0, // Calculate from unlocks
         })) || [],

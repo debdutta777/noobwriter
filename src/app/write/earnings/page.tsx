@@ -11,14 +11,13 @@ export default async function EarningsPage() {
     redirect('/login')
   }
 
-  // Check if user is a writer
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
+  // Check if user has any series (writer) — role field is informational only
+  const { count } = await supabase
+    .from('series')
+    .select('id', { count: 'exact', head: true })
+    .eq('author_id', user.id)
 
-  if (!profile || (profile.role !== 'writer' && profile.role !== 'both')) {
+  if (!count) {
     redirect('/write/dashboard')
   }
 

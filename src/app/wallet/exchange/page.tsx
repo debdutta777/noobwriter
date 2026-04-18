@@ -65,7 +65,7 @@ export default function ExchangePage() {
     // Get exchange history
     const { exchanges: history } = await getExchangeHistory()
     if (history) {
-      setExchanges(history)
+      setExchanges(history as unknown as ExchangeTransaction[])
     }
 
     setLoading(false)
@@ -189,10 +189,19 @@ export default function ExchangePage() {
           </Badge>
         )
       case 'cancelled':
+      case 'refunded':
         return (
           <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
             <XCircle className="w-3 h-3 mr-1" />
             Cancelled
+          </Badge>
+        )
+      case 'rejected':
+      case 'failed':
+        return (
+          <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+            <XCircle className="w-3 h-3 mr-1" />
+            Rejected
           </Badge>
         )
       default:
