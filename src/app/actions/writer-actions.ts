@@ -353,7 +353,11 @@ export async function createChapter(formData: {
       : await getNextChapterNumber(formData.series_id)
 
     const slug = await uniqueChapterSlug(supabase, formData.series_id, formData.title)
-    const wordCount = formData.content.trim().split(/\s+/).filter(Boolean).length
+    const wordCount = formData.content
+      .replace(/<[^>]+>/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length
 
     const { data, error } = await supabase
       .from('chapters')

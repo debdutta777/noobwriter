@@ -65,16 +65,24 @@ export default function ChapterEditClient({
     coin_price: chapter.coin_price || 10,
   })
 
-  const wordCount = formData.content.trim().split(/\s+/).filter(Boolean).length
+  const wordCount = formData.content
+    .replace(/<[^>]+>/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length
 
   const handleSave = async () => {
     setIsSaving(true)
 
     try {
-      // Calculate word count (novels only)
+      // Calculate word count (novels only) — strip HTML tags first
       const calculatedWordCount = isManga
         ? 0
-        : formData.content.trim().split(/\s+/).filter(Boolean).length
+        : formData.content
+            .replace(/<[^>]+>/g, ' ')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean).length
 
       // Generate new slug if title changed
       const slug = formData.title !== chapter.title

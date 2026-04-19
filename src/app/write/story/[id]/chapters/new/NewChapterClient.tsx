@@ -40,7 +40,11 @@ export default function NewChapterClient({ seriesId, contentType, nextChapterNum
     coin_price: 10,
   })
 
-  const wordCount = formData.content.trim().split(/\s+/).filter(Boolean).length
+  const wordCount = formData.content
+    .replace(/<[^>]+>/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length
 
   const handleSave = async (publish: boolean = false) => {
     if (publish) setIsPublishing(true)

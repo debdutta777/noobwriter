@@ -66,7 +66,7 @@ export function Navbar() {
         .from('profiles')
         .select('id, display_name, email, avatar_url')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
 
       // If profile doesn't exist, create it
       if (profileError || !profileData) {
@@ -84,7 +84,7 @@ export function Navbar() {
         .from('wallets')
         .select('coin_balance')
         .eq('user_id', userId)
-        .single()
+        .maybeSingle()
 
       // If wallet doesn't exist, create it
       if (walletError || !walletData) {

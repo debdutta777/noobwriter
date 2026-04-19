@@ -1,6 +1,6 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Lora, Merriweather, Playfair_Display, JetBrains_Mono } from 'next/font/google'
 import { ThemeProvider } from '@/components/providers/theme-provider'
 import { Toaster as SonnerToaster } from '@/components/ui/sonner'
 import { Toaster } from '@/components/ui/toaster'
@@ -11,11 +11,11 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { defaultMetadata } from '@/lib/metadata'
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-inter',
-})
+const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' })
+const lora = Lora({ subsets: ['latin'], display: 'swap', variable: '--font-lora' })
+const merriweather = Merriweather({ subsets: ['latin'], weight: ['300', '400', '700'], display: 'swap', variable: '--font-merriweather' })
+const playfair = Playfair_Display({ subsets: ['latin'], display: 'swap', variable: '--font-playfair' })
+const jetbrains = JetBrains_Mono({ subsets: ['latin'], display: 'swap', variable: '--font-jetbrains' })
 
 export const metadata: Metadata = defaultMetadata
 
@@ -35,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${lora.variable} ${merriweather.variable} ${playfair.variable} ${jetbrains.variable}`}>
       <head>
         <link rel="canonical" href="https://noobwriter.com" />
         <meta name="google-site-verification" content="YOUR_GOOGLE_VERIFICATION_CODE" />

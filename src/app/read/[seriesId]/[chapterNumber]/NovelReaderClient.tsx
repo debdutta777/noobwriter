@@ -10,6 +10,7 @@ import { getChapterContent } from '@/app/actions/reader-actions'
 import { incrementChapterViews, updateReadingProgress, toggleChapterLike } from '@/app/actions/stats-actions'
 import CommentSection from '@/components/comments/CommentSection'
 import TipButton from '@/components/tip/TipButton'
+import { sanitizeChapterHtml } from '@/lib/sanitize'
 import {
   ChevronLeft,
   ChevronRight,
@@ -381,7 +382,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
                 <div
                   className="prose prose-gray dark:prose-invert max-w-none mb-8"
                   style={{ fontSize: `${fontSize}px` }}
-                  dangerouslySetInnerHTML={{ __html: chapter.content }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeChapterHtml(chapter.content) }}
                 />
               ) : (
                 <div
