@@ -206,16 +206,13 @@ export async function getChapterContent(identifier: string, chapterNumber: numbe
         .from('wallets')
         .select('coin_balance')
         .eq('user_id', user.id)
-        .single()
-      
+        .maybeSingle()
+
       userCoins = wallet?.coin_balance || 0
     }
 
-    // Increment view count
-    await supabase
-      .from('chapters')
-      .update({ view_count: (chapter.view_count || 0) + 1 })
-      .eq('id', chapter.id)
+    // Atomic view count increment (RPC, avoids read-modify-write race)
+    await supabase.rpc('increment_chapter_views', { p_chapter_id: chapter.id })
 
     // Fetch manga pages if this is a manga series and chapter is accessible
     let mangaPages: Array<{ page_number: number; image_url: string }> = []
@@ -262,7 +259,7 @@ export async function toggleFavorite(seriesId: string) {
       .select('id')
       .eq('user_id', user.id)
       .eq('series_id', seriesId)
-      .single()
+      .maybeSingle()
 
     if (existing) {
       // Remove favorite
@@ -310,12 +307,12 @@ export async function checkIsFavorited(seriesId: string) {
   }
 
   try {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('favorites')
       .select('id')
       .eq('user_id', user.id)
       .eq('series_id', seriesId)
-      .single()
+      .maybeSingle()
 
     return { isFavorited: !!data, error: null }
   } catch (error) {
@@ -606,27 +603,42 @@ export async function createComment(data: {
   }
 }
 
-export async function likeComment(commentId: string, currentLikes: number) {
+export async function likeComment(commentId: string) {
   const supabase = await createClient()
 
   try {
     const { data: { user } } = await supabase.auth.getUser()
-    
+
     if (!user) {
-      return { success: false, error: 'You must be logged in to like comments' }
+      return { success: false, liked: false, error: 'You must be logged in to like comments' }
+    }
+
+    // comments.likes is synced by trg_sync_comment_likes
+    const { data: existing } = await supabase
+      .from('comment_likes')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('comment_id', commentId)
+      .maybeSingle()
+
+    if (existing) {
+      const { error } = await supabase
+        .from('comment_likes')
+        .delete()
+        .eq('id', existing.id)
+      if (error) throw error
+      return { success: true, liked: false, error: null }
     }
 
     const { error } = await supabase
-      .from('comments')
-      .update({ likes: currentLikes + 1 })
-      .eq('id', commentId)
-
+      .from('comment_likes')
+      .insert({ user_id: user.id, comment_id: commentId })
     if (error) throw error
 
-    return { success: true, error: null }
+    return { success: true, liked: true, error: null }
   } catch (error) {
     console.error('Error in likeComment:', error)
-    return { success: false, error: 'Failed to like comment' }
+    return { success: false, liked: false, error: 'Failed to like comment' }
   }
 }
 
@@ -685,8 +697,8 @@ export async function getRatings(seriesId: string) {
         .select('*')
         .eq('series_id', seriesId)
         .eq('user_id', user.id)
-        .single()
-      
+        .maybeSingle()
+
       userRating = data
     }
 

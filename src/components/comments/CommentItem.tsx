@@ -47,13 +47,10 @@ export default function CommentItem({
   const [likeCount, setLikeCount] = useState(comment.likes)
 
   const handleLike = async () => {
-    if (liked) return // Prevent multiple likes
-
-    const { success } = await likeComment(comment.id, likeCount)
-    
-    if (success) {
-      setLiked(true)
-      setLikeCount(likeCount + 1)
+    const result = await likeComment(comment.id)
+    if (result.success) {
+      setLiked(result.liked)
+      setLikeCount((prev) => prev + (result.liked ? 1 : -1))
     }
   }
 

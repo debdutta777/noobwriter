@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 
 export async function signUp(formData: FormData) {
   const email = formData.get('email') as string
@@ -78,11 +79,18 @@ export async function signOut() {
 
 export async function signInWithGoogle() {
   const supabase = await createClient()
-  
+
+  // Derive origin from the request so the OAuth redirect matches the actual
+  // domain the user is on (prevents session loss when APP_URL env is stale).
+  const h = await headers()
+  const host = h.get('x-forwarded-host') ?? h.get('host')
+  const proto = h.get('x-forwarded-proto') ?? 'https'
+  const origin = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_APP_URL
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`,
+      redirectTo: `${origin}/auth/callback`,
     },
   })
 

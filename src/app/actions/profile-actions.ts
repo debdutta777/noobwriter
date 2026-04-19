@@ -286,16 +286,12 @@ export async function checkIfFollowing(userId: string) {
       return { isFollowing: false, error: null }
     }
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('follows')
       .select('id')
       .eq('follower_id', user.id)
       .eq('following_id', userId)
-      .single()
-
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
-      console.error('Error checking follow status:', error)
-    }
+      .maybeSingle()
 
     return { isFollowing: !!data, error: null }
   } catch (error: any) {

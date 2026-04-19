@@ -114,6 +114,27 @@ export interface Database {
         }
         Relationships: []
       }
+      comment_likes: {
+        Row: {
+          id: string
+          user_id: string
+          comment_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          comment_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          comment_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           id: string

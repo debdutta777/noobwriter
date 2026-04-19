@@ -123,7 +123,7 @@ export async function unlockPremiumChapter(chapterId: string, price: number) {
       .select('id')
       .eq('user_id', user.id)
       .eq('chapter_id', chapterId)
-      .single()
+      .maybeSingle()
 
     if (existing) {
       return { success: true, message: 'Chapter already unlocked', alreadyUnlocked: true }

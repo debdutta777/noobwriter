@@ -213,49 +213,17 @@ export async function toggleChapterLike(chapterId: string) {
       .select('id')
       .eq('user_id', user.id)
       .eq('chapter_id', chapterId)
-      .single()
+      .maybeSingle()
 
     if (existing) {
-      // Unlike
-      await supabase
-        .from('chapter_likes')
-        .delete()
-        .eq('id', existing.id)
-
-      // Decrement likes count
-      const { data: chapter } = await supabase
-        .from('chapters')
-        .select('likes')
-        .eq('id', chapterId)
-        .single()
-
-      await supabase
-        .from('chapters')
-        .update({ likes: Math.max((chapter?.likes || 0) - 1, 0) })
-        .eq('id', chapterId)
-
+      // chapters.likes is synced by trg_sync_chapter_likes
+      await supabase.from('chapter_likes').delete().eq('id', existing.id)
       return { success: true, liked: false }
     } else {
-      // Like
-      await supabase
-        .from('chapter_likes')
-        .insert({
-          user_id: user.id,
-          chapter_id: chapterId,
-        })
-
-      // Increment likes count
-      const { data: chapter } = await supabase
-        .from('chapters')
-        .select('likes')
-        .eq('id', chapterId)
-        .single()
-
-      await supabase
-        .from('chapters')
-        .update({ likes: (chapter?.likes || 0) + 1 })
-        .eq('id', chapterId)
-
+      await supabase.from('chapter_likes').insert({
+        user_id: user.id,
+        chapter_id: chapterId,
+      })
       return { success: true, liked: true }
     }
   } catch (error) {
