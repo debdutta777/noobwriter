@@ -1,15 +1,15 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, BookOpen, Sparkles, TrendingUp, Clock, Star, TrendingUpIcon } from 'lucide-react'
+import { ArrowRight, BookOpen, Sparkles, TrendingUp, Clock, Star, TrendingUpIcon, Users, Zap } from 'lucide-react'
 import { getHomepageData } from '@/app/actions/homepage-actions'
 import SeriesCard from '@/components/series/SeriesCard'
-import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { StructuredData } from '@/components/seo/structured-data'
 
-async function HomepageSections() {
-  const data = await getHomepageData()
+export const revalidate = 120
 
+function HomepageSections({ data }: { data: Awaited<ReturnType<typeof getHomepageData>> }) {
   return (
     <>
       {/* Recommended Section */}
@@ -100,50 +100,106 @@ async function HomepageSections() {
 }
 
 export default async function HomePage() {
-  // Check if user is logged in
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const [{ data: { user } }, heroData] = await Promise.all([
+    supabase.auth.getUser(),
+    getHomepageData(),
+  ])
+
+  const heroCovers = [
+    ...heroData.recommended,
+    ...heroData.recentlyUpdated,
+  ]
+    .filter((s) => s.cover_url)
+    .slice(0, 10)
 
   return (
     <>
       <StructuredData type="website" />
       <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-500/10 via-blue-500/10 to-pink-500/10">
-        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]"></div>
-        <div className="container mx-auto px-4 py-24 lg:py-32 relative z-10">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
-              Read & Write Stories
-              <span className="block mt-2 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">That Matter</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-8">
-              Join millions of readers and writers in the world's largest community
-              for webnovels and manga. Discover your next favorite story or publish your own.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                <Link href="/browse">
-                  Start Reading <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-white">
-                <Link href="/write">Become a Writer</Link>
-              </Button>
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-pink-500/10" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-purple-500/20 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-pink-500/15 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
+
+        <div className="container mx-auto px-4 pt-20 pb-12 lg:pt-28 lg:pb-16 relative z-10">
+          <div className="grid lg:grid-cols-[1.1fr_1fr] gap-12 items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-6 border border-primary/20">
+                <Zap className="w-3 h-3" /> New chapters daily
+              </span>
+              <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-[1.05]">
+                Stories you&apos;ll
+                <span className="block bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 bg-clip-text text-transparent">
+                  lose sleep over.
+                </span>
+              </h1>
+              <p className="text-lg text-muted-foreground mb-8 max-w-xl">
+                Discover webnovels and manga from writers around the world. Unlock premium
+                chapters with coins, tip creators, and publish your own series.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 mb-10">
+                <Button size="lg" asChild className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg shadow-purple-500/25">
+                  <Link href="/browse">
+                    Start Reading <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/write">
+                    <BookOpen className="mr-2 h-5 w-5" />
+                    Become a Writer
+                  </Link>
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-6 max-w-md">
+                <HeroStat icon={<BookOpen className="w-4 h-4" />} label="Stories" value={heroData.recommended.length + heroData.recentlyUpdated.length > 0 ? '100+' : '—'} />
+                <HeroStat icon={<Users className="w-4 h-4" />} label="Readers" value="Growing" />
+                <HeroStat icon={<Sparkles className="w-4 h-4" />} label="Daily drops" value="Fresh" />
+              </div>
             </div>
+
+            {heroCovers.length > 0 && (
+              <div className="relative hidden lg:block h-[520px]">
+                <div className="absolute inset-0 grid grid-cols-3 gap-3 [mask-image:linear-gradient(to_bottom,transparent,black_15%,black_85%,transparent)]">
+                  {[0, 1, 2].map((col) => (
+                    <div
+                      key={col}
+                      className="flex flex-col gap-3 animate-marquee-y"
+                      style={{
+                        animationDelay: `${col * -6}s`,
+                        animationDuration: '28s',
+                      }}
+                    >
+                      {[...heroCovers, ...heroCovers].map((s, i) => (
+                        <div
+                          key={`${col}-${i}`}
+                          className="relative aspect-[2/3] rounded-lg overflow-hidden shadow-xl shadow-black/20 ring-1 ring-white/10"
+                        >
+                          {s.cover_url && (
+                            <Image
+                              src={s.cover_url}
+                              alt={s.title}
+                              fill
+                              sizes="180px"
+                              className="object-cover"
+                              priority={col === 0 && i < 2}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* Dynamic Content Sections */}
-      <Suspense fallback={
-        <div className="py-20 text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-600 border-r-transparent"></div>
-          <p className="mt-4 text-muted-foreground">Loading stories...</p>
-        </div>
-      }>
-        <HomepageSections />
-      </Suspense>
+      <HomepageSections data={heroData} />
 
       {/* Features Section */}
       <section className="py-20 bg-gradient-to-b from-background to-purple-500/5">
@@ -204,6 +260,18 @@ function FeatureCard({
       <div className="mb-4 group-hover:scale-110 transition-transform duration-300">{icon}</div>
       <h3 className="text-xl font-semibold mb-2 group-hover:bg-gradient-to-r group-hover:from-purple-600 group-hover:to-blue-600 group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">{title}</h3>
       <p className="text-muted-foreground">{description}</p>
+    </div>
+  )
+}
+
+function HeroStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex flex-col gap-1 border-l-2 border-primary/30 pl-3">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-wider">
+        {icon}
+        {label}
+      </div>
+      <div className="text-2xl font-bold">{value}</div>
     </div>
   )
 }

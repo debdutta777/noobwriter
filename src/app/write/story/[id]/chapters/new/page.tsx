@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getNextChapterNumber } from '@/app/actions/writer-actions'
 import NewChapterClient from './NewChapterClient'
 
 interface PageProps {
@@ -19,6 +20,13 @@ export default async function NewChapterPage({ params }: PageProps) {
   if (error || !series) notFound()
 
   const contentType = (series.content_type === 'manga' ? 'manga' : 'novel') as 'novel' | 'manga'
+  const nextChapterNumber = await getNextChapterNumber(seriesId)
 
-  return <NewChapterClient seriesId={seriesId} contentType={contentType} />
+  return (
+    <NewChapterClient
+      seriesId={seriesId}
+      contentType={contentType}
+      nextChapterNumber={nextChapterNumber}
+    />
+  )
 }

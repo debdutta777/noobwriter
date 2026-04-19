@@ -90,12 +90,22 @@ const config = {
   				'100%': {
   					transform: 'translateX(100%)'
   				}
+  			},
+  			'marquee-y': {
+  				'0%': { transform: 'translateY(0%)' },
+  				'100%': { transform: 'translateY(-50%)' }
+  			},
+  			'fade-in-up': {
+  				'0%': { opacity: '0', transform: 'translateY(12px)' },
+  				'100%': { opacity: '1', transform: 'translateY(0)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
-  			shimmer: 'shimmer 2s infinite'
+  			shimmer: 'shimmer 2s infinite',
+  			'marquee-y': 'marquee-y 28s linear infinite',
+  			'fade-in-up': 'fade-in-up 0.5s ease-out both'
   		}
   	}
   },

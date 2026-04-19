@@ -130,7 +130,7 @@ export default function NovelsPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {series.map((novel) => (
-              <Link key={novel.id} href={`/series/${novel.id}`}>
+              <Link key={novel.id} href={`/series/${(novel as any).slug || novel.id}`}>
                 <Card className="group hover:shadow-lg transition-all cursor-pointer">
                   <div className="relative aspect-[2/3] overflow-hidden rounded-t-lg bg-muted">
                     {novel.cover ? (

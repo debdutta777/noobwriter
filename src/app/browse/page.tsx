@@ -229,7 +229,7 @@ export default function BrowsePage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {series.map((item) => (
-            <Link key={item.id} href={`/series/${item.id}`}>
+            <Link key={item.id} href={`/series/${(item as any).slug || item.id}`}>
               <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                 <CardHeader className="p-0">
                   <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">

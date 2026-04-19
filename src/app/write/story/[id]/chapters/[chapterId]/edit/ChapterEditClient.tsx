@@ -9,8 +9,13 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { ArrowLeft, Save, Eye } from 'lucide-react'
-import RichTextEditor from '@/components/editor/RichTextEditor'
+import dynamic from 'next/dynamic'
 import MangaPagesUpload, { MangaPageItem } from '@/components/upload/MangaPagesUpload'
+
+const RichTextEditor = dynamic(() => import('@/components/editor/RichTextEditor'), {
+  ssr: false,
+  loading: () => <div className="min-h-[400px] rounded-md border bg-muted/30 animate-pulse" />,
+})
 import { createClient } from '@/lib/supabase/client'
 import { saveMangaPages } from '@/app/actions/manga-actions'
 
@@ -34,6 +39,7 @@ interface Chapter {
 interface ChapterEditClientProps {
   chapter: Chapter
   seriesId: string
+  seriesSlug?: string
   contentType?: 'novel' | 'manga'
   initialPages?: MangaPageItem[]
 }
@@ -41,6 +47,7 @@ interface ChapterEditClientProps {
 export default function ChapterEditClient({
   chapter,
   seriesId,
+  seriesSlug,
   contentType = 'novel',
   initialPages = [],
 }: ChapterEditClientProps) {
@@ -135,7 +142,7 @@ export default function ChapterEditClient({
                 {isSaving ? 'Saving...' : 'Save Changes'}
               </Button>
               {chapter.is_published && (
-                <Link href={`/read/${seriesId}/${chapter.chapter_number}`}>
+                <Link href={`/read/${seriesSlug || seriesId}/${chapter.chapter_number}`}>
                   <Button variant="outline">
                     <Eye className="w-4 h-4 mr-2" />
                     View Live

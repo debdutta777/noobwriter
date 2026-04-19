@@ -165,21 +165,12 @@ export default function SeriesDetailClient({ params }: SeriesDetailClientProps) 
 
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-3">
-                {series.content_type === 'novel' ? (
-                  <Link href={`/read/${series.id}/1`}>
-                    <Button size="lg" className="gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      Start Reading
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href={`/manga/${series.id}/1`}>
-                    <Button size="lg" className="gap-2">
-                      <Play className="h-4 w-4" />
-                      Start Reading
-                    </Button>
-                  </Link>
-                )}
+                <Link href={`/read/${series.slug || series.id}/1`}>
+                  <Button size="lg" className="gap-2">
+                    {series.content_type === 'novel' ? <BookOpen className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    Start Reading
+                  </Button>
+                </Link>
                 <Button
                   size="lg"
                   variant={isFavorited ? "default" : "outline"}
@@ -255,7 +246,7 @@ export default function SeriesDetailClient({ params }: SeriesDetailClientProps) 
               {displayChapters.map((chapter: any) => (
                 <Link
                   key={chapter.id}
-                  href={`/read/${series.id}/${chapter.chapter_number}`}
+                  href={`/read/${series.slug || series.id}/${chapter.chapter_number}`}
                   className="block"
                 >
                   <Card className="hover:bg-accent transition-colors">

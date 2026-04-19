@@ -130,7 +130,7 @@ export default function MangaPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {series.map((manga) => (
-              <Link key={manga.id} href={`/series/${manga.id}`}>
+              <Link key={manga.id} href={`/series/${(manga as any).slug || manga.id}`}>
                 <Card className="group hover:shadow-lg transition-all cursor-pointer">
                   <div className="relative aspect-[2/3] overflow-hidden rounded-t-lg bg-muted">
                     {manga.cover ? (

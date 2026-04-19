@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export interface SeriesCard {
   id: string
+  slug: string
   title: string
   cover_url: string | null
   synopsis: string
@@ -28,6 +29,7 @@ export async function getRecommendedSeries(limit: number = 6): Promise<SeriesCar
     .from('series')
     .select(`
       id,
+      slug,
       title,
       cover_url,
       synopsis,
@@ -49,6 +51,7 @@ export async function getRecommendedSeries(limit: number = 6): Promise<SeriesCar
 
   return (data || []).map(series => ({
     id: series.id,
+    slug: series.slug,
     title: series.title,
     cover_url: series.cover_url,
     synopsis: series.synopsis || '',
@@ -72,6 +75,7 @@ export async function getRecentlyUpdatedSeries(limit: number = 6): Promise<Serie
     .from('series')
     .select(`
       id,
+      slug,
       title,
       cover_url,
       synopsis,
@@ -93,6 +97,7 @@ export async function getRecentlyUpdatedSeries(limit: number = 6): Promise<Serie
 
   return (data || []).map(series => ({
     id: series.id,
+    slug: series.slug,
     title: series.title,
     cover_url: series.cover_url,
     synopsis: series.synopsis || '',
@@ -119,6 +124,7 @@ export async function getCategoryRankings(): Promise<CategoryRanking[]> {
       .from('series')
       .select(`
         id,
+        slug,
         title,
         cover_url,
         synopsis,
@@ -139,6 +145,7 @@ export async function getCategoryRankings(): Promise<CategoryRanking[]> {
         genre,
         series: data.map(series => ({
           id: series.id,
+          slug: series.slug,
           title: series.title,
           cover_url: series.cover_url,
           synopsis: series.synopsis || '',

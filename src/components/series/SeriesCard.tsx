@@ -21,7 +21,7 @@ export default function SeriesCard({ series, showStats = true, compact = false }
 
   if (compact) {
     return (
-      <Link href={`/series/${series.id}`}>
+      <Link href={`/series/${series.slug || series.id}`}>
         <Card className="flex gap-3 p-3 hover:border-primary transition-colors">
           <div className="relative w-16 h-24 flex-shrink-0 rounded overflow-hidden bg-muted">
             {series.cover_url ? (
@@ -57,7 +57,7 @@ export default function SeriesCard({ series, showStats = true, compact = false }
   }
 
   return (
-    <Link href={`/series/${series.id}`}>
+    <Link href={`/series/${series.slug || series.id}`}>
       <Card className="overflow-hidden hover:border-primary transition-all hover:shadow-lg group">
         <div className="relative aspect-[2/3] w-full bg-muted">
           {series.cover_url ? (

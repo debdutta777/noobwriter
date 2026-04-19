@@ -2,6 +2,61 @@
 
 import { createClient } from '@/lib/supabase/server'
 
+function slugify(input: string): string {
+  const base = input
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 80)
+  return base || 'untitled'
+}
+
+async function uniqueSeriesSlug(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  title: string,
+): Promise<string> {
+  const base = slugify(title)
+  for (let i = 0; i < 20; i++) {
+    const candidate = i === 0 ? base : `${base}-${i + 1}`
+    const { data } = await supabase.from('series').select('id').eq('slug', candidate).maybeSingle()
+    if (!data) return candidate
+  }
+  return `${base}-${Date.now()}`
+}
+
+async function uniqueChapterSlug(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  seriesId: string,
+  title: string,
+): Promise<string> {
+  const base = slugify(title)
+  for (let i = 0; i < 20; i++) {
+    const candidate = i === 0 ? base : `${base}-${i + 1}`
+    const { data } = await supabase
+      .from('chapters')
+      .select('id')
+      .eq('series_id', seriesId)
+      .eq('slug', candidate)
+      .maybeSingle()
+    if (!data) return candidate
+  }
+  return `${base}-${Date.now()}`
+}
+
+export async function getNextChapterNumber(seriesId: string): Promise<number> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('chapters')
+    .select('chapter_number')
+    .eq('series_id', seriesId)
+    .order('chapter_number', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  return (data?.chapter_number ?? 0) + 1
+}
+
 export async function getWriterDashboardData() {
   const supabase = await createClient()
 
@@ -190,12 +245,7 @@ export async function createSeries(formData: {
   }
 
   try {
-    // Generate slug from title
-    const slug = formData.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .substring(0, 100) + '-' + Date.now()
+    const slug = await uniqueSeriesSlug(supabase, formData.title)
 
     const { data, error } = await supabase
       .from('series')
@@ -275,20 +325,19 @@ export async function createChapter(formData: {
   series_id: string
   title: string
   content: string
-  chapter_number: number
+  chapter_number?: number
   is_premium: boolean
   coin_price: number
 }) {
   const supabase = await createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
+
   if (authError || !user) {
     return { success: false, error: 'Not authenticated' }
   }
 
   try {
-    // Verify series ownership
     const { data: series } = await supabase
       .from('series')
       .select('author_id')
@@ -299,14 +348,11 @@ export async function createChapter(formData: {
       return { success: false, error: 'Not authorized' }
     }
 
-    // Generate slug from title
-    const slug = formData.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .substring(0, 100) + '-' + Date.now()
+    const chapterNumber = formData.chapter_number && formData.chapter_number > 0
+      ? formData.chapter_number
+      : await getNextChapterNumber(formData.series_id)
 
-    // Calculate word count from content
+    const slug = await uniqueChapterSlug(supabase, formData.series_id, formData.title)
     const wordCount = formData.content.trim().split(/\s+/).filter(Boolean).length
 
     const { data, error } = await supabase
@@ -314,9 +360,9 @@ export async function createChapter(formData: {
       .insert({
         series_id: formData.series_id,
         title: formData.title,
-        slug: slug,
+        slug,
         content: formData.content,
-        chapter_number: formData.chapter_number,
+        chapter_number: chapterNumber,
         word_count: wordCount,
         is_premium: formData.is_premium,
         coin_price: formData.coin_price,
@@ -330,9 +376,49 @@ export async function createChapter(formData: {
     }
 
     return { success: true, data, error: null }
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to create chapter' }
   }
+}
+
+export async function deleteChapter(chapterId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { success: false, error: 'Not authenticated' }
+
+  const { data: chapter } = await supabase
+    .from('chapters')
+    .select('id, series_id, series:series_id(author_id)')
+    .eq('id', chapterId)
+    .single()
+
+  const authorId = (chapter?.series as unknown as { author_id?: string } | null)?.author_id
+  if (!chapter || authorId !== user.id) {
+    return { success: false, error: 'Not authorized' }
+  }
+
+  const { error } = await supabase.from('chapters').delete().eq('id', chapterId)
+  if (error) return { success: false, error: error.message }
+
+  // Renumber remaining chapters so the sequence stays contiguous.
+  const { data: remaining } = await supabase
+    .from('chapters')
+    .select('id, chapter_number')
+    .eq('series_id', chapter.series_id)
+    .order('chapter_number', { ascending: true })
+
+  if (remaining) {
+    for (let i = 0; i < remaining.length; i++) {
+      const target = i + 1
+      if (remaining[i].chapter_number !== target) {
+        await supabase
+          .from('chapters')
+          .update({ chapter_number: target })
+          .eq('id', remaining[i].id)
+      }
+    }
+  }
+  return { success: true, error: null }
 }
 
 export async function publishChapter(chapterId: string) {

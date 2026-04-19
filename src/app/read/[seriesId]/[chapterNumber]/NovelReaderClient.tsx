@@ -26,7 +26,7 @@ import {
 } from 'lucide-react'
 
 interface NovelReaderClientProps {
-  params: { seriesId: string; chapterNumber: string }
+  params: { seriesId: string; seriesSlug: string; chapterNumber: string }
 }
 
 export default function NovelReaderClient({ params }: NovelReaderClientProps) {
@@ -147,7 +147,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-xl font-semibold">{error || 'Chapter not found'}</p>
-          <Link href={`/series/${params.seriesId}`}>
+          <Link href={`/series/${params.seriesSlug}`}>
             <Button>Back to Series</Button>
           </Link>
         </div>
@@ -173,7 +173,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link href={`/series/${params.seriesId}`}>
+              <Link href={`/series/${params.seriesSlug}`}>
                 <Button variant="ghost" size="sm">
                   <ChevronLeft className="h-4 w-4 mr-1" />
                   Back
@@ -295,7 +295,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
                 {Array.from({ length: series.total_chapters }, (_, i) => i + 1).map((num: number) => (
                   <Link
                     key={num}
-                    href={`/read/${params.seriesId}/${num}`}
+                    href={`/read/${params.seriesSlug}/${num}`}
                     className={`block p-3 rounded-lg hover:bg-accent transition-colors ${
                       num === chapterNum ? 'bg-primary text-primary-foreground' : ''
                     }`}
@@ -317,7 +317,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
           {/* Chapter Header */}
           <div className="mb-8 text-center">
             <Link
-              href={`/series/${params.seriesId}`}
+              href={`/series/${params.seriesSlug}`}
               className="text-sm text-muted-foreground hover:text-primary"
             >
               {series.title}
@@ -440,7 +440,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
           {/* Chapter Navigation */}
           <div className="flex items-center justify-between py-8 border-t border-b mb-8">
             {prevChapter ? (
-              <Link href={`/read/${params.seriesId}/${prevChapter}`}>
+              <Link href={`/read/${params.seriesSlug}/${prevChapter}`}>
                 <Button variant="outline">
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Previous Chapter
@@ -450,7 +450,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
               <div />
             )}
 
-            <Link href={`/series/${params.seriesId}`}>
+            <Link href={`/series/${params.seriesSlug}`}>
               <Button variant="ghost">
                 <List className="h-4 w-4 mr-2" />
                 All Chapters
@@ -458,7 +458,7 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
             </Link>
 
             {nextChapter ? (
-              <Link href={`/read/${params.seriesId}/${nextChapter}`}>
+              <Link href={`/read/${params.seriesSlug}/${nextChapter}`}>
                 <Button variant="outline">
                   Next Chapter
                   <ChevronRight className="h-4 w-4 ml-2" />
@@ -490,20 +490,20 @@ export default function NovelReaderClient({ params }: NovelReaderClientProps) {
       {/* Bottom Navigation (Mobile) */}
       <div className="fixed bottom-0 left-0 right-0 md:hidden bg-background border-t p-3 flex gap-2">
         {prevChapter && (
-          <Link href={`/read/${params.seriesId}/${prevChapter}`} className="flex-1">
+          <Link href={`/read/${params.seriesSlug}/${prevChapter}`} className="flex-1">
             <Button variant="outline" className="w-full">
               <ChevronLeft className="h-4 w-4" />
               Prev
             </Button>
           </Link>
         )}
-        <Link href={`/series/${params.seriesId}`} className="flex-1">
+        <Link href={`/series/${params.seriesSlug}`} className="flex-1">
           <Button variant="ghost" className="w-full">
             <List className="h-4 w-4" />
           </Button>
         </Link>
         {nextChapter && (
-          <Link href={`/read/${params.seriesId}/${nextChapter}`} className="flex-1">
+          <Link href={`/read/${params.seriesSlug}/${nextChapter}`} className="flex-1">
             <Button variant="outline" className="w-full">
               Next
               <ChevronRight className="h-4 w-4" />

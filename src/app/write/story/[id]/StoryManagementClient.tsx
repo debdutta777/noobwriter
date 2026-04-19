@@ -21,7 +21,7 @@ import {
   MessageSquare,
   Users
 } from 'lucide-react'
-import { publishChapter } from '@/app/actions/writer-actions'
+import { publishChapter, deleteChapter } from '@/app/actions/writer-actions'
 import { getSeriesStats } from '@/app/actions/stats-actions'
 
 interface Chapter {
@@ -37,6 +37,7 @@ interface Chapter {
 
 interface Series {
   id: string
+  slug: string
   title: string
   cover_url: string | null
   synopsis: string
@@ -75,22 +76,35 @@ export default function StoryManagementClient({ series, initialChapters }: Story
   const handlePublishChapter = async (chapterId: string) => {
     setPublishingId(chapterId)
     const result = await publishChapter(chapterId)
-    
+
     if (result.success) {
-      // Update local state
-      setChapters(prev => prev.map(ch => 
-        ch.id === chapterId 
+      setChapters(prev => prev.map(ch =>
+        ch.id === chapterId
           ? { ...ch, is_published: true, published_at: new Date().toISOString() }
           : ch
       ))
-      // Refresh stats
       const statsResult = await getSeriesStats(series.id)
       if (statsResult.success) {
         setStats(statsResult.stats)
       }
     }
-    
+
     setPublishingId(null)
+  }
+
+  const handleDeleteChapter = async (chapterId: string, chapterTitle: string) => {
+    if (!confirm(`Delete "${chapterTitle}"? Remaining chapters will be renumbered. This cannot be undone.`)) return
+    const result = await deleteChapter(chapterId)
+    if (!result.success) {
+      alert(result.error || 'Failed to delete chapter')
+      return
+    }
+    setChapters(prev => {
+      const filtered = prev.filter(ch => ch.id !== chapterId)
+      return filtered.map((ch, i) => ({ ...ch, chapter_number: i + 1 }))
+    })
+    const statsResult = await getSeriesStats(series.id)
+    if (statsResult.success) setStats(statsResult.stats)
   }
 
   const totalWords = stats?.totalWords || chapters.reduce((sum, ch) => sum + (ch.word_count || 0), 0)
@@ -241,19 +255,31 @@ export default function StoryManagementClient({ series, initialChapters }: Story
                 </Link>
               </div>
             ) : (
-              <div className="space-y-2">
-                {chapters.map((chapter) => (
-                  <div
-                    key={chapter.id}
-                    className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary font-semibold">
+              <div className="rounded-lg border overflow-hidden">
+                <div className="grid grid-cols-[64px_1fr_auto] gap-4 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/30 border-b">
+                  <span>#</span>
+                  <span>Chapter</span>
+                  <span className="text-right">Actions</span>
+                </div>
+                <div className="divide-y">
+                  {chapters.map((chapter) => (
+                    <div
+                      key={chapter.id}
+                      className="grid grid-cols-[64px_1fr_auto] gap-4 items-center px-4 py-3 hover:bg-accent/40 transition-colors"
+                    >
+                      <div className="flex items-center justify-center w-12 h-12 rounded-md bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-bold text-lg">
                         {chapter.chapter_number}
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold mb-1">{chapter.title}</h4>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-semibold truncate">{chapter.title}</h4>
+                          {chapter.is_published ? (
+                            <Badge className="shrink-0">Published</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="shrink-0">Draft</Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <FileText className="w-3 h-3" />
                             {chapter.word_count?.toLocaleString() || 0} words
@@ -268,39 +294,42 @@ export default function StoryManagementClient({ series, initialChapters }: Story
                           </span>
                         </div>
                       </div>
-                      {chapter.is_published ? (
-                        <Badge>Published</Badge>
-                      ) : (
-                        <Badge variant="secondary">Draft</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Link href={`/write/story/${series.id}/chapters/${chapter.id}/edit`}>
-                        <Button variant="outline" size="sm">
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                      </Link>
-                      {!chapter.is_published && (
-                        <Button 
-                          size="sm"
-                          onClick={() => handlePublishChapter(chapter.id)}
-                          disabled={publishingId === chapter.id}
-                        >
-                          {publishingId === chapter.id ? 'Publishing...' : 'Publish'}
-                        </Button>
-                      )}
-                      {chapter.is_published && (
-                        <Link href={`/read/${series.id}/${chapter.chapter_number}`}>
+                      <div className="flex items-center gap-2 justify-end">
+                        <Link href={`/write/story/${series.id}/chapters/${chapter.id}/edit`}>
                           <Button variant="outline" size="sm">
-                            <Eye className="w-4 h-4 mr-2" />
-                            View
+                            <Edit className="w-4 h-4" />
+                            <span className="hidden sm:inline ml-2">Edit</span>
                           </Button>
                         </Link>
-                      )}
+                        {!chapter.is_published ? (
+                          <Button
+                            size="sm"
+                            onClick={() => handlePublishChapter(chapter.id)}
+                            disabled={publishingId === chapter.id}
+                          >
+                            {publishingId === chapter.id ? 'Publishing...' : 'Publish'}
+                          </Button>
+                        ) : (
+                          <Link href={`/read/${series.slug || series.id}/${chapter.chapter_number}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="w-4 h-4" />
+                              <span className="hidden sm:inline ml-2">View</span>
+                            </Button>
+                          </Link>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteChapter(chapter.id, chapter.title)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          title="Delete chapter"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
           </CardContent>

@@ -24,7 +24,7 @@ export default async function ChapterEditPage({ params }: PageProps) {
 
   const { data: series } = await supabase
     .from('series')
-    .select('id, title, content_type')
+    .select('id, slug, title, content_type')
     .eq('id', seriesId)
     .single()
 
@@ -45,6 +45,7 @@ export default async function ChapterEditPage({ params }: PageProps) {
       <ChapterEditClient
         chapter={chapter as any}
         seriesId={seriesId}
+        seriesSlug={series?.slug ?? undefined}
         contentType={contentType}
         initialPages={initialPages}
       />

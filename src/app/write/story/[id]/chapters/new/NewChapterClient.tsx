@@ -9,15 +9,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { createChapter, publishChapter } from '@/app/actions/writer-actions'
 import { saveMangaPages } from '@/app/actions/manga-actions'
 import { Save, Eye } from 'lucide-react'
-import RichTextEditor from '@/components/editor/RichTextEditor'
+import dynamic from 'next/dynamic'
 import MangaPagesUpload, { MangaPageItem } from '@/components/upload/MangaPagesUpload'
+
+const RichTextEditor = dynamic(() => import('@/components/editor/RichTextEditor'), {
+  ssr: false,
+  loading: () => <div className="min-h-[400px] rounded-md border bg-muted/30 animate-pulse" />,
+})
 
 interface Props {
   seriesId: string
   contentType: 'novel' | 'manga'
+  nextChapterNumber: number
 }
 
-export default function NewChapterClient({ seriesId, contentType }: Props) {
+export default function NewChapterClient({ seriesId, contentType, nextChapterNumber }: Props) {
   const router = useRouter()
   const isManga = contentType === 'manga'
 
@@ -29,7 +35,7 @@ export default function NewChapterClient({ seriesId, contentType }: Props) {
   const [formData, setFormData] = useState({
     title: '',
     content: '',
-    chapter_number: 1,
+    chapter_number: nextChapterNumber,
     is_premium: false,
     coin_price: 10,
   })
@@ -109,16 +115,15 @@ export default function NewChapterClient({ seriesId, contentType }: Props) {
               <Card>
                 <CardContent className="p-6 space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="chapter_number">Chapter Number</Label>
-                    <Input
-                      id="chapter_number"
-                      type="number"
-                      min="1"
-                      value={formData.chapter_number}
-                      onChange={(e) =>
-                        setFormData({ ...formData, chapter_number: parseInt(e.target.value) })
-                      }
-                    />
+                    <Label>Chapter Number</Label>
+                    <div className="flex items-center gap-3">
+                      <div className="inline-flex items-center justify-center h-10 px-4 rounded-md bg-primary/10 text-primary font-semibold">
+                        Chapter {formData.chapter_number}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        Auto-numbered — assigned in order.
+                      </span>
+                    </div>
                   </div>
 
                   <div className="space-y-2">

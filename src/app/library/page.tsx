@@ -210,7 +210,7 @@ export default function LibraryPage() {
                           {item.series?.content_type === 'novel' ? 'Novel' : 'Manga'}
                         </span>
                       </div>
-                      <Link href={`/series/${item.series_id}`}>
+                      <Link href={`/series/${item.series_slug || item.series_id}`}>
                         <h3 className="font-semibold text-lg mb-2 hover:text-primary cursor-pointer">
                           {item.series?.title}
                         </h3>
@@ -230,7 +230,7 @@ export default function LibraryPage() {
                           />
                         </div>
                       </div>
-                      <Link href={`/read/${item.series_id}/${item.last_chapter_read}`}>
+                      <Link href={`/read/${item.series_slug || item.series_id}/${item.last_chapter_read}`}>
                         <Button className="w-full" size="sm">
                           Continue Reading
                         </Button>
@@ -265,7 +265,7 @@ export default function LibraryPage() {
           {favorites && favorites.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
               {favorites.map((series: any) => (
-                <Link key={series?.id} href={`/series/${series?.id}`}>
+                <Link key={series?.id} href={`/series/${series?.slug || series?.id}`}>
                   <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer group">
                     <CardHeader className="p-0">
                       <div className="relative aspect-[3/4] overflow-hidden rounded-t-lg">
@@ -352,7 +352,7 @@ export default function LibraryPage() {
                           </span>
                         )}
                       </div>
-                      <Link href={`/series/${item.series_id}`}>
+                      <Link href={`/series/${item.series_slug || item.series_id}`}>
                         <h3 className="font-semibold text-lg mb-1 hover:text-primary cursor-pointer">
                           {item.series?.title}
                         </h3>
@@ -378,12 +378,12 @@ export default function LibraryPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Link href={`/read/${item.series_id}/${item.last_chapter_read}`} className="flex-1">
+                        <Link href={`/read/${item.series_slug || item.series_id}/${item.last_chapter_read}`} className="flex-1">
                           <Button className="w-full" size="sm">
                             {item.progress_percentage === 100 ? 'Read Again' : 'Continue'}
                           </Button>
                         </Link>
-                        <Link href={`/series/${item.series_id}`}>
+                        <Link href={`/series/${item.series_slug || item.series_id}`}>
                           <Button variant="outline" size="sm">
                             Details
                           </Button>

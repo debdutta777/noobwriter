@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 
 interface Props {
-  params: { seriesId: string; chapterNumber: string }
+  params: { seriesId: string; seriesSlug: string; chapterNumber: string }
 }
 
 export default function MangaReaderClient({ params }: Props) {
@@ -111,7 +111,7 @@ export default function MangaReaderClient({ params }: Props) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <p className="text-lg">{error || 'Chapter not found'}</p>
-        <Link href={`/series/${params.seriesId}`}>
+        <Link href={`/series/${params.seriesSlug}`}>
           <Button variant="outline">Back to series</Button>
         </Link>
       </div>
@@ -147,7 +147,7 @@ export default function MangaReaderClient({ params }: Props) {
       <header className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link
-            href={`/series/${params.seriesId}`}
+            href={`/series/${params.seriesSlug}`}
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -186,7 +186,7 @@ export default function MangaReaderClient({ params }: Props) {
           {data.prevChapter ? (
             <Button
               variant="outline"
-              onClick={() => router.push(`/read/${params.seriesId}/${data.prevChapter}`)}
+              onClick={() => router.push(`/read/${params.seriesSlug}/${data.prevChapter}`)}
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Previous
@@ -214,7 +214,7 @@ export default function MangaReaderClient({ params }: Props) {
           </div>
 
           {data.nextChapter ? (
-            <Button onClick={() => router.push(`/read/${params.seriesId}/${data.nextChapter}`)}>
+            <Button onClick={() => router.push(`/read/${params.seriesSlug}/${data.nextChapter}`)}>
               Next
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>

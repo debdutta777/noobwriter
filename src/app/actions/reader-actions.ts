@@ -2,6 +2,19 @@
 
 import { createClient } from '@/lib/supabase/server'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export async function resolveSeriesId(identifier: string): Promise<string | null> {
+  if (UUID_RE.test(identifier)) return identifier
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('series')
+    .select('id')
+    .eq('slug', identifier)
+    .maybeSingle()
+  return data?.id ?? null
+}
+
 export async function browseSeries(filters: {
   contentType?: 'novel' | 'manga' | 'all'
   genres?: string[]
@@ -63,6 +76,7 @@ export async function browseSeries(filters: {
 
     const series = (data || []).map((s: any) => ({
       id: s.id,
+      slug: s.slug,
       title: s.title,
       author: s.profiles?.display_name || 'Anonymous',
       cover: s.cover_url,
@@ -82,15 +96,15 @@ export async function browseSeries(filters: {
   }
 }
 
-export async function getSeriesDetail(seriesId: string) {
+export async function getSeriesDetail(identifier: string) {
   const supabase = await createClient()
 
   try {
-    // Get series info
+    const column = UUID_RE.test(identifier) ? 'id' : 'slug'
     const { data: series, error: seriesError } = await supabase
       .from('series')
       .select('*, author:profiles!series_author_id_fkey(display_name, avatar_url)')
-      .eq('id', seriesId)
+      .eq(column, identifier)
       .single()
 
     if (seriesError || !series) {
@@ -101,7 +115,7 @@ export async function getSeriesDetail(seriesId: string) {
     const { data: chapters } = await supabase
       .from('chapters')
       .select('*')
-      .eq('series_id', seriesId)
+      .eq('series_id', series.id)
       .eq('is_published', true)
       .order('chapter_number', { ascending: true })
 
@@ -121,13 +135,17 @@ export async function getSeriesDetail(seriesId: string) {
   }
 }
 
-export async function getChapterContent(seriesId: string, chapterNumber: number) {
+export async function getChapterContent(identifier: string, chapterNumber: number) {
   const supabase = await createClient()
 
   const { data: { user } } = await supabase.auth.getUser()
 
   try {
-    // Get chapter
+    const seriesId = await resolveSeriesId(identifier)
+    if (!seriesId) {
+      return { chapter: null, isUnlocked: false, error: 'Chapter not found' }
+    }
+
     const { data: chapter, error: chapterError } = await supabase
       .from('chapters')
       .select('*, series(title, author_id, profiles(display_name))')
@@ -329,6 +347,7 @@ export async function getUserLibrary() {
         *,
         series:series_id (
           id,
+          slug,
           title,
           cover_url,
           content_type,
@@ -352,6 +371,7 @@ export async function getUserLibrary() {
         *,
         series:series_id (
           id,
+          slug,
           title,
           cover_url,
           content_type,
@@ -399,9 +419,10 @@ export async function getUserLibrary() {
         const lastChapterRead = prog.chapters?.chapter_number || 0
         const totalChapters = prog.series?.total_chapters || 1
         const progressPercentage = Math.round((lastChapterRead / totalChapters) * 100)
-        
+
         return {
           ...prog,
+          series_slug: prog.series?.slug || null,
           last_chapter_read: lastChapterRead,
           progress_percentage: progressPercentage,
         }
@@ -445,6 +466,7 @@ export async function getReadingHistory() {
         *,
         series:series_id (
           id,
+          slug,
           title,
           cover_url,
           content_type,
@@ -469,9 +491,10 @@ export async function getReadingHistory() {
       const lastChapterRead = item.chapters?.chapter_number || 0
       const totalChapters = item.series?.total_chapters || 1
       const progressPercentage = Math.round((lastChapterRead / totalChapters) * 100)
-      
+
       return {
         ...item,
+        series_slug: item.series?.slug || null,
         last_chapter_read: lastChapterRead,
         progress_percentage: progressPercentage,
       }
