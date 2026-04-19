@@ -67,37 +67,82 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+    text-rendering: optimizeLegibility;
+  }
+  ::selection {
+    @apply bg-primary/20 text-foreground;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-muted;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted-foreground/50 rounded-md;
+  @apply bg-border rounded-full border-[2px] border-solid border-transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/70;
+  @apply bg-muted-foreground/50;
+  background-clip: padding-box;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
 /* Reading mode styles */
 .reading-content {
   @apply text-lg leading-relaxed;
-  font-family: 'Georgia', serif;
+  font-family: var(--font-lora), 'Georgia', serif;
 }
 
 .reading-content p {
   @apply mb-4;
+}
+
+/* Prose tweaks for chapter body */
+.prose {
+  @apply text-foreground/90;
+}
+.prose p {
+  @apply leading-[1.8];
+}
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  @apply text-foreground tracking-tight;
+}
+.prose a {
+  @apply text-primary underline-offset-4 decoration-primary/40 hover:decoration-primary;
+}
+.prose blockquote {
+  @apply not-italic border-l-2 border-primary/60 text-foreground/80;
+}
+.prose code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-[0.9em];
+}
+
+/* Grid pattern backdrop */
+.bg-grid-white\/\[0\.02\] {
+  background-image: linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                    linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
 }
 
 /* Manga viewer */
